@@ -32,3 +32,5 @@ var Sample = function () {
 
 	return me;
 };
+
+module.exports = Sample;

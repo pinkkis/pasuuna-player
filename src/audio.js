@@ -1,3 +1,14 @@
+const Tracker = require('./tracker');
+const EventBus = require('./eventBus');
+
+const {	EVENT,
+	STEREOSEPARATION,
+	AMIGA_PALFREQUENCY_HALF,
+	PC_FREQUENCY_HALF,
+	NOTEPERIOD,
+	NOTEOFF,
+	SETTINGS} = require('./enum');
+
 var Audio = (function () {
 	var me = {};
 
@@ -697,3 +708,4 @@ var Audio = (function () {
 
 }());
 
+module.exports = Audio;

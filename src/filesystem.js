@@ -14,17 +14,6 @@ function loadFile(url, next) {
 	req.send(null);
 }
 
-function saveFile(b, filename) {
-	var a = document.createElement("a");
-	document.body.appendChild(a);
-	a.style = "display: none";
-	url = window.URL.createObjectURL(b);
-	a.href = url;
-	a.download = filename;
-	a.click();
-	window.URL.revokeObjectURL(url);
-}
-
 function BinaryStream(arrayBuffer, bigEndian) {
 	var obj = {
 		index: 0,
@@ -185,3 +174,7 @@ function BinaryStream(arrayBuffer, bigEndian) {
 	return obj;
 }
 
+module.exports = {
+	loadFile,
+	BinaryStream,
+};

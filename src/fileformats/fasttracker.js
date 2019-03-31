@@ -1,3 +1,14 @@
+const Sample = require('../models/sample');
+const Note = require('../models/note');
+const Instrument = require('../models/instrument');
+const Tracker = require('../tracker');
+const EventBus = require('../eventBus');
+const {BinaryStream} = require('../filesystem');
+
+const { EVENT,
+	LOOPTYPE,
+	TRACKERMODE} = require('../enum');
+
 var FastTracker = function () {
 	var me = {};
 
@@ -590,3 +601,4 @@ var FastTracker = function () {
 	return me;
 };
 
+module.exports = FastTracker;

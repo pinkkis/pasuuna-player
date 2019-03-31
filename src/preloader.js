@@ -1,3 +1,8 @@
+const Audio = require('./audio');
+
+const {	cachedAssets,
+	PRELOADTYPE } = require('./enum');
+
 var PreLoader = function () {
 	var me = {};
 
@@ -66,3 +71,5 @@ var PreLoader = function () {
 
 	return me;
 };
+
+module.exports = PreLoader;

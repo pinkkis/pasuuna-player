@@ -1,2 +1,19 @@
-const waaclock = require('waaclock');
+// host.js
+// enum.js
+// eventBus.js
+// filesystem.js
+// audio.js
+// lib/util.js
+// lib/waaclock.js
+// audio/filterChain.js
+// tracker.js
+// preloader.js
+// fetchService.js
+// fileformats/detect.js
+// fileformats/protracker.js
+// fileformats/soundtracker.js
+// fileformats/fasttracker.js
+// models/instrument.js
+// models/sample.js
+// models/note.js
 

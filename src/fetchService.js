@@ -1,3 +1,5 @@
+const Host = require('./host');
+
 var FetchService = (function () {
 
 	// somewhat Jquery syntax compatible for easy portability
@@ -131,3 +133,4 @@ var FetchService = (function () {
 	return me;
 }());
 
+module.exports = FetchService;

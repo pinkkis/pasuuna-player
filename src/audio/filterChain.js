@@ -1,4 +1,9 @@
-FilterChain = (function (filters) {
+const PreLoader = require('../preloader');
+const Audio = require('../audio');
+const { cachedAssets,
+	PRELOADTYPE } = require('../enum');
+
+var FilterChain = (function (filters) {
 
 	var me = {};
 
@@ -297,7 +302,4 @@ FilterChain = (function (filters) {
 
 });
 
-
-
-
-
+module.exports = FilterChain;

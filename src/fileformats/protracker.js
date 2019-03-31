@@ -1,3 +1,14 @@
+const Note = require('../models/note');
+const Instrument = require('../models/instrument');
+const Tracker = require('../tracker');
+const EventBus = require('../eventBus');
+const {BinaryStream} = require('../filesystem');
+
+const {EVENT,
+	LOOPTYPE,
+	TRACKERMODE,
+	SETTINGS} = require('../enum');
+
 var ProTracker = function () {
 	var me = {};
 
@@ -299,3 +310,5 @@ var ProTracker = function () {
 
 	return me;
 };
+
+module.exports = ProTracker;

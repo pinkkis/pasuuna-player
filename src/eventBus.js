@@ -25,3 +25,5 @@ var EventBus = (function () {
 
 	return me;
 }());
+
+module.exports = EventBus;

@@ -1,3 +1,11 @@
+const Instrument = require('../models/instrument');
+const Tracker = require('../tracker');
+const EventBus = require('../eventBus');
+
+const {EVENT,
+	LOOPTYPE,
+	TRACKERMODE} = require('../enum');
+
 var SoundTracker = function () {
 	var me = {};
 
@@ -126,3 +134,5 @@ var SoundTracker = function () {
 
 	return me;
 };
+
+module.exports = SoundTracker;

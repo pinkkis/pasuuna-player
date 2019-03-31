@@ -1,3 +1,10 @@
+const Sample = require('./sample');
+const Tracker = require('../tracker');
+const Audio = require('../audio');
+const EventBus = require('../eventBus');
+
+const {EVENT} = require('../enum');
+
 var Instrument = function () {
 	var me = {};
 
@@ -326,3 +333,5 @@ var Instrument = function () {
 
 	return me;
 };
+
+module.exports = Instrument;

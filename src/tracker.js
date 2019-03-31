@@ -1,4 +1,23 @@
+// IIFE
+
 const WAAClock = require(WAAClock);
+const Note = require('./models/note');
+const Instrument = require('./models/instrument');
+const FileDetector = require('./fileformats/detect');
+const { getUrlParameter } = require('./lib/util');
+const { BinaryStream, loadFile } = require('./filesystem');
+const Audio = require('./audio');
+const EventBus = require('./eventBus');
+const Host = require('./host');
+
+const {	UI,
+	EVENT,
+	PLAYTYPE,
+	NOTEPERIOD,
+	FTNOTEPERIOD,
+	NOTEOFF,
+	TRACKERMODE,
+	SETTINGS} = require('./enum');
 
 var periodNoteTable = {};
 var periodFinetuneTable = {};
@@ -2107,3 +2126,5 @@ var Tracker = (function () {
 
 	return me;
 }());
+
+module.exports = Tracker;

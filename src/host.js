@@ -55,3 +55,5 @@ var Host = function () {
 
 	return me;
 }();
+
+module.exports = Host;

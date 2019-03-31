@@ -58,3 +58,5 @@ var Note = function () {
 
 	return me;
 };
+
+module.exports = Note;
