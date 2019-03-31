@@ -1,10 +1,8 @@
-const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const CleanPlugin = require('clean-webpack-plugin');
 
 module.exports = {
 	output: {
-		globalObject: 'this',
 		filename: 'bassoonplayer.js'
 	},
 	entry: {
@@ -12,7 +10,7 @@ module.exports = {
 	},
 	module: {
 		rules: [{
-			test: /\.tsx?$/,
+			test: /\.[t|j]sx?$/,
 			use: 'babel-loader',
 			exclude: /node_modules/
 		},

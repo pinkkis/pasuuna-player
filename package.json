@@ -4,7 +4,8 @@
   "description": "bassoon-player",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+	"start": "webpack-dev-server --mode development --progress --port=8000 --open",
+	"build": "webpack --mode production"
   },
   "repository": {
     "type": "git",
