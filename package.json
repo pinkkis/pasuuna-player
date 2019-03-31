@@ -1,8 +1,8 @@
 {
-	"name": "bassoon-player",
-	"version": "1.0.0",
-	"description": "bassoon-player",
-	"main": "dist/bassoonplayer.js",
+	"name": "pasuuna",
+	"version": "0.2.0",
+	"description": "javascript MOD player with mod and xm support",
+	"main": "dist/pasuunaplayer.js",
 	"scripts": {
 		"start": "http-server .",
 		"build": "webpack --mode production",
@@ -10,7 +10,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/pinkkis/bassoon-player.git"
+		"url": "git+https://github.com/pinkkis/pasuuna-player.git"
 	},
 	"keywords": [
 		"mod player",
@@ -19,9 +19,9 @@
 	"author": "",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/pinkkis/bassoon-player/issues"
+		"url": "https://github.com/pinkkis/pasuuna-player/issues"
 	},
-	"homepage": "https://github.com/pinkkis/bassoon-player#readme",
+	"homepage": "https://github.com/pinkkis/pasuuna-player#readme",
 	"devDependencies": {
 		"@babel/core": "^7.4.0",
 		"@babel/plugin-proposal-class-properties": "^7.4.0",

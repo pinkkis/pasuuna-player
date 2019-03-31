@@ -18,7 +18,7 @@ import {EVENT,
 
 let clock;
 
-export class BassoonTracker {
+export class Tracker {
 	constructor() {
 		this.audio = new Audio(this);
 		this.detector = new FileDetector(this);

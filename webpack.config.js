@@ -3,10 +3,10 @@ const CleanPlugin = require('clean-webpack-plugin');
 
 module.exports = {
 	output: {
-		filename: 'bassoonplayer.js'
+		filename: 'pasuunaplayer.js'
 	},
 	entry: {
-		player: ['./src/BassoonPlayer.js']
+		player: ['./src/index.js']
 	},
 	module: {
 		rules: [{
