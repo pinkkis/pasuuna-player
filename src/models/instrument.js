@@ -129,7 +129,7 @@ export class Instrument {
 				}
 
 				if (this.fadeout) {
-					var fadeOutTime = (65536 / me.fadeout) * tickTime / 2;
+					var fadeOutTime = (65536 / this.fadeout) * tickTime / 2;
 					noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + fadeOutTime);
 				}
 
@@ -140,7 +140,7 @@ export class Instrument {
 
 			if (this.panningEnvelope.enabled && Audio.usePanning) {
 				timeOffset = 0;
-				startPoint = this.panningEnvelope.points[me.panningEnvelope.sustainPoint];
+				startPoint = this.panningEnvelope.points[this.panningEnvelope.sustainPoint];
 				if (startPoint) timeOffset = startPoint[0] * tickTime;
 				for (p = this.panningEnvelope.sustainPoint; p < this.panningEnvelope.count; p++) {
 					point = this.panningEnvelope.points[p];
@@ -259,7 +259,7 @@ export class Instrument {
 			var tickTime = Tracker.getProperties().tickTime;
 
 			var maxPoint = this.volumeEnvelope.sustain ? this.volumeEnvelope.sustainPoint + 1 : this.volumeEnvelope.count;
-			noteInfo.volumeEnvelope.gain.setValueAtTime(me.volumeEnvelope.points[0][1] / 64, time);
+			noteInfo.volumeEnvelope.gain.setValueAtTime(this.volumeEnvelope.points[0][1] / 64, time);
 			for (var p = 1; p < maxPoint; p++) {
 				var point = this.volumeEnvelope.points[p];
 				noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime));

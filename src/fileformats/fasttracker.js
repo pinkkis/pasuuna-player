@@ -3,21 +3,22 @@ import { Note } from '../models/note';
 import { Instrument } from '../models/instrument';
 import { BinaryStream } from '../filesystem';
 import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
-
+import { processEnvelope, checkEnvelope } from '../lib/util';
 import { bus as EventBus } from '../eventBus';
 
-export const FastTracker = function () {
-	var me = {};
+// TODO: has Tracker global ref
+
+export class FastTracker {
+	constructor() {}
 
 	// see ftp://ftp.modland.com/pub/documents/format_documentation/FastTracker%202%20v2.04%20(.xm).html
-	me.load = function (file, name) {
-
-		console.log("loading FastTracker");
+	load(file, name) {
+		console.log('loading FastTracker');
 		Tracker.setTrackerMode(TRACKERMODE.FASTTRACKER);
 		Tracker.clearInstruments(1);
 
-		var mod = {};
-		var song = {
+		let mod = {};
+		let song = {
 			patterns: [],
 			instruments: []
 		};
@@ -30,7 +31,7 @@ export const FastTracker = function () {
 
 		mod.trackerName = file.readString(20);
 		mod.trackerVersion = file.readByte();
-		mod.trackerVersion = file.readByte() + "." + mod.trackerVersion;
+		mod.trackerVersion = file.readByte() + '.' + mod.trackerVersion;
 		mod.headerSize = file.readDWord(); // is this always 276?
 		mod.songlength = file.readWord();
 		mod.restartPosition = file.readWord();
@@ -47,28 +48,27 @@ export const FastTracker = function () {
 		mod.defaultTempo = file.readWord();
 		mod.defaultBPM = file.readWord();
 
-		console.log("File was made in " + mod.trackerName + " version " + mod.trackerVersion);
+		console.log('File was made in ' + mod.trackerName + ' version ' + mod.trackerVersion);
 
+		const patternTable = [];
+		let highestPattern = 0;
 
-		var patternTable = [];
-		var highestPattern = 0;
-		for (var i = 0; i < mod.songlength; ++i) {
+		for (let i = 0; i < mod.songlength; ++i) {
 			patternTable[i] = file.readUbyte();
 			if (highestPattern < patternTable[i]) highestPattern = patternTable[i];
 		}
+
 		song.patternTable = patternTable;
 		song.length = mod.songlength;
 		song.channels = mod.numberOfChannels;
 		song.restartPosition = (mod.restartPosition + 1);
 
-		var fileStartPos = 60 + mod.headerSize;
+		let fileStartPos = 60 + mod.headerSize;
 		file.goto(fileStartPos);
 
-
-		for (i = 0; i < mod.numberOfPatterns; i++) {
-
-			var patternData = [];
-			var thisPattern = {};
+		for (let i = 0; i < mod.numberOfPatterns; i++) {
+			const patternData = [];
+			const thisPattern = {};
 
 			thisPattern.headerSize = file.readDWord();
 			thisPattern.packingType = file.readUbyte(); // always 0
@@ -78,12 +78,12 @@ export const FastTracker = function () {
 			fileStartPos += thisPattern.headerSize;
 			file.goto(fileStartPos);
 
-			for (var step = 0; step < thisPattern.patternLength; step++) {
-				var row = [];
-				var channel;
+			for (let step = 0; step < thisPattern.patternLength; step++) {
+				let row = [];
+				let channel;
 				for (channel = 0; channel < mod.numberOfChannels; channel++) {
-					var note = new Note();
-					var v = file.readUbyte();
+					let note = new Note();
+					let v = file.readUbyte();
 
 					if (v & 128) {
 						if (v & 1) note.setIndex(file.readUbyte());
@@ -100,8 +100,6 @@ export const FastTracker = function () {
 					}
 
 					row.push(note);
-
-
 				}
 				patternData.push(row);
 			}
@@ -112,12 +110,10 @@ export const FastTracker = function () {
 			song.patterns.push(patternData);
 		}
 
-		var instrumentContainer = [];
+		const instrumentContainer = [];
 
-		for (i = 1; i <= mod.numberOfInstruments; ++i) {
-
-
-			var instrument = new Instrument();
+		for (let i = 1; i <= mod.numberOfInstruments; ++i) {
+			const instrument = new Instrument();
 
 			try {
 				instrument.filePosition = file.index;
@@ -141,11 +137,15 @@ export const FastTracker = function () {
 					if (instrument.sampleHeaderSize > 200) instrument.sampleHeaderSize = 40;
 
 					//should we assume it's always 40? not according to specs ...
-
-
-					for (var si = 0; si < 96; si++) instrument.sampleNumberForNotes.push(file.readUbyte());
-					for (si = 0; si < 24; si++) instrument.volumeEnvelope.raw.push(file.readWord());
-					for (si = 0; si < 24; si++) instrument.panningEnvelope.raw.push(file.readWord());
+					for (let si = 0; si < 96; si++) {
+						instrument.sampleNumberForNotes.push(file.readUbyte());
+					}
+					for (let si = 0; si < 24; si++) {
+						instrument.volumeEnvelope.raw.push(file.readWord());
+					}
+					for (let si = 0; si < 24; si++) {
+						instrument.panningEnvelope.raw.push(file.readWord());
+					}
 
 					instrument.volumeEnvelope.count = file.readUbyte();
 					instrument.panningEnvelope.count = file.readUbyte();
@@ -163,52 +163,28 @@ export const FastTracker = function () {
 					instrument.vibrato.rate = file.readUbyte();
 					instrument.fadeout = file.readWord();
 					instrument.reserved = file.readWord();
-
-					function processEnvelope(envelope) {
-						envelope.points = [];
-						for (si = 0; si < 12; si++) envelope.points.push(envelope.raw.slice(si * 2, si * 2 + 2));
-						if (envelope.type & 1) { // on
-							envelope.enabled = true;
-						}
-
-						if (envelope.type & 2) {
-							// sustain
-							envelope.sustain = true;
-						}
-
-						if (envelope.type & 4) {
-							// loop
-							envelope.loop = true;
-						}
-
-						return envelope;
-
-					}
-
 					instrument.volumeEnvelope = processEnvelope(instrument.volumeEnvelope);
 					instrument.panningEnvelope = processEnvelope(instrument.panningEnvelope);
 
 				}
 			} catch (e) {
-				console.error("error", e);
+				console.error('error', e);
 			}
 
 			fileStartPos += instrument.headerSize;
 			file.goto(fileStartPos);
 
-
 			if (instrument.numberOfSamples === 0) {
-				var sample = Sample();
+				const sample = new Sample();
 				instrument.samples.push(sample);
 			} else {
 				if (file.isEOF(1)) {
-					console.error("seek past EOF");
-					console.error(instrument);
+					console.error('seek past EOF', instrument);
 					break;
 				}
 
-				for (var sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
-					sample = Sample();
+				for (let sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
+					const sample = new Sample();
 
 					sample.length = file.readDWord();
 					sample.loop.start = file.readDWord();
@@ -228,8 +204,8 @@ export const FastTracker = function () {
 					file.goto(fileStartPos);
 				}
 
-				for (sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
-					sample = instrument.samples[sampleI];
+				for (let sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
+					const sample = instrument.samples[sampleI];
 					if (!sample.length) continue;
 
 					fileStartPos += sample.length;
@@ -245,25 +221,27 @@ export const FastTracker = function () {
 					sample.loop.enabled = !!sample.loop.type;
 
 					// sample data
-					console.log("Reading sample from 0x" + file.index + " with length of " + sample.length + (sample.bits === 16 ? " words" : " bytes") + " and repeat length of " + sample.loop.length);
-					var sampleEnd = sample.length;
+					console.log('Reading sample from 0x' + file.index + ' with length of ' + sample.length + (sample.bits === 16 ? ' words' : ' bytes') + ' and repeat length of ' + sample.loop.length);
+					const sampleEnd = sample.length;
 
-
-					var old = 0;
+					let old = 0;
 					if (sample.bits === 16) {
-						for (var j = 0; j < sampleEnd; j++) {
-							var b = file.readShort() + old;
+						for (let j = 0; j < sampleEnd; j++) {
+							const b = file.readShort() + old;
 							if (b < -32768) b += 65536;
 							else if (b > 32767) b -= 65536;
 							old = b;
 							sample.data.push(b / 32768);
 						}
 					} else {
-						for (j = 0; j < sampleEnd; j++) {
-							b = file.readByte() + old;
+						for (let j = 0; j < sampleEnd; j++) {
+							const b = file.readByte() + old;
+							if (b < -128) {
+								b += 256;
+							} else if (b > 127) {
+								b -= 256;
+							}
 
-							if (b < -128) b += 256;
-							else if (b > 127) b -= 256;
 							old = b;
 							sample.data.push(b / 127); // TODO: or /128 ? seems to introduce artifacts - see test-loop-fadeout.xm
 						}
@@ -271,69 +249,63 @@ export const FastTracker = function () {
 
 					// unroll ping pong loops
 					if (sample.loop.type === LOOPTYPE.PINGPONG) {
-
 						// TODO: keep original sample?
-						var loopPart = sample.data.slice(sample.loop.start, sample.loop.start + sample.loop.length);
+						const loopPart = sample.data.slice(sample.loop.start, sample.loop.start + sample.loop.length);
 
 						sample.data = sample.data.slice(0, sample.loop.start + sample.loop.length);
 						sample.data = sample.data.concat(loopPart.reverse());
 						sample.loop.length = sample.loop.length * 2;
 						sample.length = sample.loop.start + sample.loop.length;
-
 					}
 
 					file.goto(fileStartPos);
-
 				}
 			}
 
 			instrument.setSampleIndex(0);
 
 			Tracker.setInstrument(i, instrument);
-			instrumentContainer.push({ label: i + " " + instrument.name, data: i });
+			instrumentContainer.push({ label: i + ' ' + instrument.name, data: i });
 
 		}
+
 		EventBus.trigger(EVENT.instrumentListChange, instrumentContainer);
 		song.instruments = Tracker.getInstruments();
 
 		Tracker.setBPM(mod.defaultBPM);
 		Tracker.setAmigaSpeed(mod.defaultTempo);
 
-		me.validate(song);
+		this.validate(song);
 
 		return song;
 	};
 
 
 	// build internal
-	me.write = function (next) {
-		var song = Tracker.getSong();
-		var instruments = Tracker.getInstruments(); // note: intruments start at index 1, not 0
-		var trackCount = Tracker.getTrackCount();
+	write(next) {
+		const song = Tracker.getSong();
+		const instruments = Tracker.getInstruments(); // note: intruments start at index 1, not 0
+		const trackCount = Tracker.getTrackCount();
+		const version = typeof versionNumber === 'undefined' ? 'dev' : versionNumber;
 
-		var version = typeof versionNumber === "undefined" ? "dev" : versionNumber;
-
-		var highestPattern = 0;
-		for (i = 0; i < 128; i++) {
-			var p = song.patternTable[i] || 0;
+		let highestPattern = 0;
+		for (let i = 0; i < 128; i++) {
+			const p = song.patternTable[i] || 0;
 			highestPattern = Math.max(highestPattern, p);
 		}
 
-
 		// first get filesize
-		var fileSize = 60 + 276;
+		const fileSize = 60 + 276;
 
-		for (i = 0; i <= highestPattern; i++) {
+		for (let i = 0; i <= highestPattern; i++) {
 			if (song.patterns[i]) {
 				fileSize += (9 + (song.patterns[i].length * trackCount * 5));
 			}
-
 		}
 
 		// TODO: trim instrument list;
-
-		for (i = 1; i < instruments.length; i++) {
-			var instrument = instruments[i];
+		for (let i = 1; i < instruments.length; i++) {
+			const instrument = instruments[i];
 
 			if (instrument && instrument.hasSamples()) {
 				instrument.samples.forEach(function (sample) {
@@ -346,15 +318,13 @@ export const FastTracker = function () {
 			}
 		}
 
-		var i;
-		var arrayBuffer = new ArrayBuffer(fileSize);
-		var file = new BinaryStream(arrayBuffer, false);
+		let arrayBuffer = new ArrayBuffer(fileSize);
+		const file = new BinaryStream(arrayBuffer, false);
 
-
-		file.writeStringSection("Extended Module: ", 17);
+		file.writeStringSection('Extended Module: ', 17);
 		file.writeStringSection(song.title, 20);
 		file.writeByte(26);
-		file.writeStringSection("BassoonTracker " + version, 20);
+		file.writeStringSection('BassoonTracker ' + version, 20);
 		file.writeByte(4); // minor version xm format
 		file.writeByte(1); // major version xm format
 
@@ -370,17 +340,16 @@ export const FastTracker = function () {
 
 
 		//TO CHECK: are most players compatible when we only only write the actual song length instead of all 256?
-		for (i = 0; i < 256; i++) {
+		for (let i = 0; i < 256; i++) {
 			file.writeUByte(song.patternTable[i] || 0);
 		}
 
 
 		// write pattern data
-		for (i = 0; i <= highestPattern; i++) {
-
-			var thisPattern = song.patterns[i];
-			var patternLength = 0;
-			var patternSize = 0;
+		for (let i = 0; i <= highestPattern; i++) {
+			let thisPattern = song.patterns[i];
+			let patternLength = 0;
+			let patternSize = 0;
 
 			if (thisPattern) {
 				patternLength = thisPattern.length;
@@ -394,10 +363,10 @@ export const FastTracker = function () {
 
 			if (thisPattern) {
 				// TODO: packing?
-				for (var step = 0, max = thisPattern.length; step < max; step++) {
-					var row = thisPattern[step];
-					for (var channel = 0; channel < trackCount; channel++) {
-						var note = row[channel] || {};
+				for (let step = 0, max = thisPattern.length; step < max; step++) {
+					const row = thisPattern[step];
+					for (let channel = 0; channel < trackCount; channel++) {
+						const note = row[channel] || {};
 						file.writeUByte(note.index || 0);
 						file.writeUByte(note.instrument || 0);
 						file.writeUByte(note.volumeEffect || 0);
@@ -406,16 +375,13 @@ export const FastTracker = function () {
 					}
 				}
 			}
-
 		}
 
 		// write instrument data
-		for (i = 1; i < instruments.length; i++) {
-
-			instrument = instruments[i];
+		for (let i = 1; i < instruments.length; i++) {
+			const instrument = instruments[i];
 
 			if (instrument && instrument.hasSamples()) {
-
 				instrument.numberOfSamples = instrument.samples.length;
 
 				file.writeDWord(243); // header size;
@@ -423,31 +389,31 @@ export const FastTracker = function () {
 				file.writeUByte(0); // instrument type
 				file.writeWord(instrument.numberOfSamples); // number of samples
 
-				var volumeEnvelopeType =
+				const volumeEnvelopeType =
 					(instrument.volumeEnvelope.enabled ? 1 : 0)
 					+ (instrument.volumeEnvelope.sustain ? 2 : 0)
 					+ (instrument.volumeEnvelope.loop ? 4 : 0);
 
-				var panningEnvelopeType =
+				const panningEnvelopeType =
 					(instrument.panningEnvelope.enabled ? 1 : 0)
 					+ (instrument.panningEnvelope.sustain ? 2 : 0)
 					+ (instrument.panningEnvelope.loop ? 4 : 0);
 
 
 				file.writeDWord(40); // sample header size;
-				for (var si = 0; si < 96; si++) {
+				for (let si = 0; si < 96; si++) {
 					file.writeUByte(instrument.sampleNumberForNotes[si] || 0); // sample number for notes
 				}
 
 				// volume envelope
-				for (si = 0; si < 12; si++) {
-					var point = instrument.volumeEnvelope.points[si] || [0, 0];
+				for (let si = 0; si < 12; si++) {
+					const point = instrument.volumeEnvelope.points[si] || [0, 0];
 					file.writeWord(point[0]);
 					file.writeWord(point[1]);
 				}
 				// panning envelope
-				for (si = 0; si < 12; si++) {
-					point = instrument.panningEnvelope.points[si] || [0, 0];
+				for (let si = 0; si < 12; si++) {
+					const point = instrument.panningEnvelope.points[si] || [0, 0];
 					file.writeWord(point[0]);
 					file.writeWord(point[1]);
 				}
@@ -472,24 +438,23 @@ export const FastTracker = function () {
 				// write samples
 
 				// first all sample headers
-				for (var sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
-					var thisSample = instrument.samples[sampleI];
+				for (let sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
+					const thisSample = instrument.samples[sampleI];
+					let sampleType = 0;
 
-					var sampleType = 0;
-					if (thisSample.loop.length > 2 && thisSample.loop.enabled) sampleType = 1;
+					if (thisSample.loop.length > 2 && thisSample.loop.enabled) {
+						sampleType = 1;
+					}
 
-					//TODO pingpong loops, or are we keeping pingpong loops unrolled?
-
-					var sampleByteLength = thisSample.length;
-					var sampleLoopByteStart = thisSample.loop.start;
-					var sampleLoopByteLength = thisSample.loop.length;
+					let sampleByteLength = thisSample.length;
+					let sampleLoopByteStart = thisSample.loop.start;
+					let sampleLoopByteLength = thisSample.loop.length;
 					if (thisSample.bits === 16) {
 						sampleType += 16;
 						sampleByteLength *= 2;
 						sampleLoopByteStart *= 2;
 						sampleLoopByteLength *= 2;
 					}
-
 
 					file.writeDWord(sampleByteLength);
 					file.writeDWord(sampleLoopByteStart);
@@ -500,38 +465,45 @@ export const FastTracker = function () {
 					file.writeUByte((thisSample.panning || 0) + 128);
 					file.writeUByte(thisSample.relativeNote || 0);
 					file.writeUByte(0);
-					file.writeStringSection(thisSample.name || "", 22);
-
+					file.writeStringSection(thisSample.name || '', 22);
 				}
 
 				// then all sample data
-				for (sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
-					thisSample = instrument.samples[sampleI];
+				for (let sampleI = 0; sampleI < instrument.numberOfSamples; sampleI++) {
+					const thisSample = instrument.samples[sampleI];
 
-					var b;
-					var delta = 0;
-					var prev = 0;
+					let b;
+					let delta = 0;
+					let prev = 0;
 
 					if (thisSample.bits === 16) {
-						for (si = 0, max = thisSample.length; si < max; si++) {
+						for (let si = 0, max = thisSample.length; si < max; si++) {
 							// write 16-bit sample data
 							b = Math.round(thisSample.data[si] * 32768);
 							delta = b - prev;
 							prev = b;
 
-							if (delta < -32768) delta += 65536;
-							else if (delta > 32767) delta -= 65536;
+							if (delta < -32768) {
+								delta += 65536;
+							} else if (delta > 32767) {
+								delta -= 65536;
+							}
+
 							file.writeWord(delta);
 						}
 					} else {
-						for (si = 0, max = thisSample.length; si < max; si++) {
+						for (let si = 0, max = thisSample.length; si < max; si++) {
 							// write 8-bit sample data
 							b = Math.round(thisSample.data[si] * 127);
 							delta = b - prev;
 							prev = b;
 
-							if (delta < -128) delta += 256;
-							else if (delta > 127) delta -= 256;
+							if (delta < -128) {
+								delta += 256;
+							} else if (delta > 127) {
+								delta -= 256;
+							}
+
 							file.writeByte(delta);
 						}
 					}
@@ -539,61 +511,27 @@ export const FastTracker = function () {
 			} else {
 				// empty instrument
 				file.writeDWord(29); // header size;
-				file.writeStringSection(instrument ? instrument.name : "", 22);
+				file.writeStringSection(instrument ? instrument.name : '', 22);
 				file.writeUByte(0); // instrument type
 				file.writeWord(0); // number of samples
 			}
 		}
 
 		if (next) next(file);
+	}
 
-	};
-
-	me.validate = function (song) {
-
-		function checkEnvelope(envelope, type) {
-			var isValid = true;
-			if (envelope.points && envelope.points[0]) {
-				if (envelope.points[0][0] === 0) {
-					var c = 0;
-					for (var i = 1; i < envelope.count; i++) {
-						var point = envelope.points[i];
-						if (point && point[0] > c) {
-							c = point[0];
-						} else {
-							isValid = false;
-						}
-					}
-				} else {
-					isValid = false;
-				}
-			} else {
-				isValid = false;
-			}
-
-			if (isValid) {
-				return envelope;
-			} else {
-				console.warn("Invalid envelope, resetting to default");
-				return type === "volume"
-					? { raw: [], enabled: false, points: [[0, 48], [10, 64], [20, 40], [30, 18], [40, 28], [50, 18]], count: 6 }
-					: { raw: [], enabled: false, points: [[0, 32], [20, 40], [40, 24], [60, 32], [80, 32]], count: 5 };
-			}
-		}
-
-		song.instruments.forEach(function (instrument) {
+	validate(song) {
+		song.instruments.forEach((instrument) => {
 			// check envelope
-			instrument.volumeEnvelope = checkEnvelope(instrument.volumeEnvelope, "volume");
-			instrument.panningEnvelope = checkEnvelope(instrument.panningEnvelope, "panning");
+			instrument.volumeEnvelope = checkEnvelope(instrument.volumeEnvelope, 'volume');
+			instrument.panningEnvelope = checkEnvelope(instrument.panningEnvelope, 'panning');
 
 			// check sampleIndexes;
-			var maxSampleIndex = instrument.samples.length - 1;
-			for (var i = 0, max = instrument.sampleNumberForNotes.length; i < max; i++) {
+			const maxSampleIndex = instrument.samples.length - 1;
+			for (let i = 0, max = instrument.sampleNumberForNotes.length; i < max; i++) {
 				instrument.sampleNumberForNotes[i] = Math.min(instrument.sampleNumberForNotes[i], maxSampleIndex);
 			}
 		})
-
 	};
 
-	return me;
-};
+}

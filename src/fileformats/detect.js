@@ -7,7 +7,7 @@ class FileType {
 	static get unsupported() { return { name: 'UNSUPPORTED' }; }
 	static get mod_ProTracker() { return { name: 'PROTRACKER', isMod: true, loader: function () { return ProTracker() } }; }
 	static get mod_SoundTracker() { return { name: 'SOUNDTRACKER', isMod: true, loader: function () { return SoundTracker() } }; }
-	static get mod_FastTracker() { return { name: 'FASTTRACKER', isMod: true, loader: function () { return FastTracker() } }; }
+	static get mod_FastTracker() { return { name: 'FASTTRACKER', isMod: true, loader: function () { return new FastTracker() } }; }
 	static get sample() { return { name: 'SAMPLE', isSample: true }; }
 	static get zip() { return { name: 'ZIP' } };
 }
