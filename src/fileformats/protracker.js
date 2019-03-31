@@ -1,6 +1,5 @@
 import { Note } from '../models/note';
 import { Instrument } from '../models/instrument';
-import { BinaryStream } from '../filesystem';
 import { EVENT, LOOPTYPE, TRACKERMODE, SETTINGS } from '../enum';
 import { bus } from '../eventBus';
 

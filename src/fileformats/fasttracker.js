@@ -1,7 +1,6 @@
 import { Sample } from '../models/sample';
 import { Note } from '../models/note';
 import { Instrument } from '../models/instrument';
-import { BinaryStream } from '../filesystem';
 import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
 import { processEnvelope, checkEnvelope } from '../lib/util';
 import { bus as EventBus } from '../eventBus';
@@ -23,7 +22,7 @@ export class FastTracker {
 			instruments: []
 		};
 
-		file.litteEndian = true;
+		file.littleEndian = true;
 
 		file.goto(17);
 		song.title = file.readString(20);

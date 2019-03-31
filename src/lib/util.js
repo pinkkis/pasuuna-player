@@ -115,3 +115,21 @@ export function isST(file) {
 
 	return true;
 }
+
+export function loadFile(url, next) {
+	const req = new XMLHttpRequest();
+	req.open('GET', url, true);
+	req.responseType = 'arraybuffer';
+	req.onload = (event) => {
+		const arrayBuffer = req.response;
+		if (arrayBuffer) {
+			if (next) next(arrayBuffer);
+		} else {
+			console.error('unable to load', url);
+			if (next) {
+				next(false);
+			}
+		}
+	};
+	req.send(null);
+}

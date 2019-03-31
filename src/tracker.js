@@ -2,8 +2,8 @@ import WAAClock from 'waaclock';
 import { Note } from './models/note';
 import { Instrument } from './models/instrument';
 import { FileDetector } from './fileformats/detect';
-import { getUrlParameter } from './lib/util';
-import { BinaryStream, loadFile } from './filesystem';
+import { getUrlParameter, loadFile } from './lib/util';
+import { BinaryStream } from './binaryStream';
 import { bus as EventBus } from './eventBus';
 
 import { UI,
