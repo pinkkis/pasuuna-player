@@ -15,6 +15,8 @@ import { UI,
 	TRACKERMODE,
 	SETTINGS } from './enum';
 
+const detector = new FileDetector();
+
 export const Tracker = function () {
 	var me = {
 		periodNoteTable: {},
@@ -1906,7 +1908,7 @@ export const Tracker = function () {
 
 		var isMod = false;
 		var file = new BinaryStream(arrayBuffer, true);
-		var result = FileDetector.detect(file, name);
+		var result = detector.detect(file, name);
 
 		if (result && result.name == "ZIP") {
 			console.log("extracting zip file");
