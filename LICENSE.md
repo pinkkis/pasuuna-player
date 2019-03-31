@@ -1,3 +1,4 @@
+Pasuuna player
 
 The MIT License (MIT)
 
@@ -20,3 +21,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+This software uses code from [BassoonTracker](https://github.com/steffest/BassoonTracker) by Steffest, used under the [MIT license](https://github.com/steffest/BassoonTracker/blob/master/license.txt), Copyright (c) 2017 Steffest
+
+---
+
+This repository holds songs for demonstrative purposes from The Mod Archive, used under the [Mod Archive License](https://modarchive.org/index.php?terms-upload).
+* Silkworm - [Barry Leitch](https://modarchive.org/member.php?81340)
+* Space Debris - Markus "Captain" Kaarlonen
+* Deadlock - [Elwood](https://modarchive.org/member.php?69004)
