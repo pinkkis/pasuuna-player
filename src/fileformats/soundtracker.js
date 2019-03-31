@@ -2,15 +2,15 @@ import { Instrument } from '../models/instrument';
 import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
 import { bus } from '../eventBus';
 
-// TODO: Tracker global ref
-
 export class SoundTracker {
-	constructor() {}
+	constructor(tracker) {
+		this.tracker = tracker;
+	}
 
 	load(file, name) {
-		Tracker.setTrackerMode(TRACKERMODE.PROTRACKER);
-		Tracker.useLinearFrequency = false;
-		Tracker.clearInstruments(15);
+		this.tracker.setTrackerMode(TRACKERMODE.PROTRACKER);
+		this.tracker.useLinearFrequency = false;
+		this.tracker.clearInstruments(15);
 
 		const patternLength = 64;
 		const instrumentCount = 15;
@@ -28,7 +28,7 @@ export class SoundTracker {
 			const sampleName = file.readString(22);
 			const sampleLength = file.readWord(); // in words
 
-			const instrument = new Instrument();
+			const instrument = new Instrument(this.tracker);
 			instrument.name = sampleName;
 			instrument.sample.length = instrument.realLen = sampleLength << 1;
 			instrument.sample.volume = file.readWord();
@@ -40,10 +40,10 @@ export class SoundTracker {
 			instrument.pointer = sampleDataOffset;
 			sampleDataOffset += instrument.sample.length;
 			instrument.setSampleIndex(0);
-			Tracker.setInstrument(i, instrument);
+			this.tracker.setInstrument(i, instrument);
 		}
 
-		song.instruments = Tracker.getInstruments();
+		song.instruments = this.tracker.getInstruments();
 
 		file.goto(470);
 
@@ -79,7 +79,7 @@ export class SoundTracker {
 				}
 
 				// fill with empty data for other channels
-				for (let channel = 4; channel < Tracker.getTrackCount(); channel++) {
+				for (let channel = 4; channel < this.tracker.getTrackCount(); channel++) {
 					row.push({ note: 0, effect: 0, instrument: 0, param: 0 });
 				}
 
@@ -91,7 +91,7 @@ export class SoundTracker {
 		const instrumentContainer = [];
 
 		for (let i = 1; i <= instrumentCount; i++) {
-			const instrument = Tracker.getInstrument(i);
+			const instrument = this.tracker.getInstrument(i);
 			if (instrument) {
 				console.log("Reading sample from 0x" + file.index + " with length of " + instrument.sample.length + " bytes and repeat length of " + instrument.sample.loop.length);
 				const sampleEnd = instrument.sample.length;

@@ -1,19 +1,3 @@
-import {Tracker as T} from './tracker';
-import {Audio as A} from './audio';
+import {BassoonTracker} from './tracker';
 
-window.Tracker = T();
-window.Audio = A(Tracker);
-
-window.BassoonTracker = {
-	init: () => { Audio.init(); Tracker.init(); },
-	load: Tracker.load,
-	playSong: Tracker.playSong,
-	stop: Tracker.stop,
-	togglePlay: Tracker.togglePlay,
-	isPlaying: Tracker.isPlaying,
-	getTrackCount: Tracker.getTrackCount,
-	getSong: Tracker.getSong,
-	getStateAtTime: Tracker.getStateAtTime,
-	setCurrentSongPosition: Tracker.setCurrentSongPosition,
-	audio: Audio
-};
+window.BassoonTracker = new BassoonTracker();
