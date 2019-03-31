@@ -84,7 +84,7 @@
 			#scope {
 				border: 1px solid #b7b7b7;
 				height: 36px;
-				display: inline-block;
+				display: block;
 				width: 215px;
 				float: right;
 				border-radius: 5px;
@@ -146,10 +146,13 @@
 		<div id="playlist">
 			<h2>Playlist</h2>
 			<ul>
-				<li onclick="play('../demo-mods/Tinytune.mod')">TinyTune (MOD)</li>
-				<li onclick="play('../demo-mods/spacedeb.mod')">Space Debris (MOD)</li>
-				<li onclick="play('../demo-mods/deadlock.xm')">Deadlock (XM)</li>
+				<li onclick="play('../demo-mods/silkworm.mod')">Silkworm (MOD - SoundTracker)</li>
+				<li onclick="play('../demo-mods/spacedeb.mod')">Space Debris (MOD - ProTracker)</li>
+				<li onclick="play('../demo-mods/deadlock.xm')">Deadlock (XM - FastTracker)</li>
 			</ul>
+			<footer>
+					<p>Songs used under the modarchive redistribution clause of their <a href="https://modarchive.org/index.php?terms-upload">license</a> for the purposes of demostrating the tool.</p>
+			</footer>
 		</div>
 
 		<script src="../dist/bassoonplayer.js"></script>
@@ -183,7 +186,7 @@
 					songName.innerHTML = "Sorry<br>Your browser does not support WebAudio.<br>Supported browsers are Chrome,Firefox,Safari and Edge";
 				} else {
 
-					var demoMod = "../demo-mods/Tinytune.mod";
+					var demoMod = "../demo-mods/spacedeb.mod";
 
 					var startTime;
 					var wasPlaying;

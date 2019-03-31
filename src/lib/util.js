@@ -66,3 +66,52 @@ export function checkEnvelope(envelope, type) {
 			: { raw: [], enabled: false, points: [[0, 32], [20, 40], [40, 24], [60, 32], [80, 32]], count: 5 };
 	}
 }
+
+export function isAcii(byte) {
+	return byte < 128;
+}
+
+export function isST(file) {
+	console.log('Checking for old 15 instrument soundtracker format');
+
+	file.goto(0);
+
+	for (let i = 0; i < 20; i++) {
+		if (!isAcii(file.readByte())) {
+			return false;
+		}
+	}
+
+	console.log('First 20 chars are ascii, checking Samples');
+
+	// check samples
+	let totalSampleLength = 0;
+	let probability = 0;
+	for (let s = 0; s < 15; s++) {
+		for (let i = 0; i < 22; i++) {
+			if (!isAcii(file.readByte())) {
+				return false;
+			}
+		}
+
+		file.jump(-22);
+		const name = file.readString(22);
+
+		if (name.toLowerCase().substr(0, 3) == 'st-') {
+			probability += 10;
+		}
+
+		if (probability > 20) {
+			return true;
+		}
+
+		totalSampleLength += file.readWord();
+		file.jump(6);
+	}
+
+	if (totalSampleLength * 2 + 1624 > length) {
+		return false;
+	}
+
+	return true;
+}

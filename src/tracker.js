@@ -1960,10 +1960,12 @@ export const Tracker = function () {
 		}
 
 		if (result.isSample) {
-			Editor.importSample(file, name);
+			console.error('Player cannot use samples alone');
 		}
 
-		if (next) next(isMod);
+		if (next) {
+			next(isMod);
+		}
 
 	};
 

@@ -1,12 +1,13 @@
 import { SoundTracker } from './soundtracker';
 import { ProTracker } from './protracker';
 import { FastTracker } from './fasttracker';
+import { isST } from '../lib/util';
 
 class FileType {
 	static get unknown() { return { name: 'UNKNOWN' }; }
 	static get unsupported() { return { name: 'UNSUPPORTED' }; }
 	static get mod_ProTracker() { return { name: 'PROTRACKER', isMod: true, loader: function () { return ProTracker() } }; }
-	static get mod_SoundTracker() { return { name: 'SOUNDTRACKER', isMod: true, loader: function () { return SoundTracker() } }; }
+	static get mod_SoundTracker() { return { name: 'SOUNDTRACKER', isMod: true, loader: function () { return new SoundTracker() } }; }
 	static get mod_FastTracker() { return { name: 'FASTTRACKER', isMod: true, loader: function () { return new FastTracker() } }; }
 	static get sample() { return { name: 'SAMPLE', isSample: true }; }
 	static get zip() { return { name: 'ZIP' } };
@@ -69,7 +70,7 @@ export class FileDetector {
 		// more info: ftp://ftp.modland.com/pub/documents/format_documentation/Ultimate%20Soundtracker%20(.mod).txt
 
 		if (name && name.indexOf('.') >= 0 && length > 1624) {
-			const isSoundTracker = isST();
+			const isSoundTracker = isST(file);
 			if (isSoundTracker) {
 				return FileType.mod_SoundTracker;
 			}
@@ -78,53 +79,4 @@ export class FileDetector {
 		// fallback to sample
 		return FileType.sample;
 	};
-};
-
-function isAcii(byte) {
-	return byte < 128;
-}
-
-function isST() {
-	console.log('Checking for old 15 instrument soundtracker format');
-
-	file.goto(0);
-
-	for (let i = 0; i < 20; i++) {
-		if (!isAcii(file.readByte())) {
-			return false;
-		}
-	}
-
-	console.log('First 20 chars are ascii, checking Samples');
-
-	// check samples
-	let totalSampleLength = 0;
-	let probability = 0;
-	for (let s = 0; s < 15; s++) {
-		for (i = 0; i < 22; i++) {
-			if (!isAcii(file.readByte())) {
-				return false;
-			}
-		}
-
-		file.jump(-22);
-		const name = file.readString(22);
-
-		if (name.toLowerCase().substr(0, 3) == 'st-') {
-			probability += 10;
-		}
-
-		if (probability > 20) {
-			return true;
-		}
-
-		totalSampleLength += file.readWord();
-		file.jump(6);
-	}
-
-	if (totalSampleLength * 2 + 1624 > length) {
-		return false;
-	}
-
-	return true;
 }
