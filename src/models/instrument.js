@@ -1,125 +1,24 @@
-const Sample = require('./sample');
-const EventBus = require('../eventBus');
+import {Sample} from './sample';
+import {bus as EventBus} from '../eventBus';
+import {EVENT} from '../enum';
 
-const {EVENT} = require('../enum');
+export class Instrument {
+	constructor() {
+		this.type = 'sample';
+		this.name = '';
+		this.instrumentIndex = 0;
+		this.sampleIndex = -1;
+		this.fadeout = 128;
+		this.data = [];
+		this.samples = [new Sample()];
+		this.sample = this.samples[0];
+		this.volumeEnvelope = { raw: [], enabled: false, points: [[0, 48], [10, 64], [20, 40], [30, 18], [40, 28], [50, 18]], count: 6 };
+		this.panningEnvelope = { raw: [], enabled: false, points: [[0, 32], [20, 40], [40, 24], [60, 32], [80, 32]], count: 5 };
+		this.vibrato = {};
+		this.sampleNumberForNotes = [];
+	}
 
-var Instrument = function () {
-	var me = {};
-
-	me.type = "sample";
-	me.name = "";
-	me.instrumentIndex = 0;
-	me.sampleIndex = -1;
-	me.fadeout = 128;
-	me.data = [];
-	me.samples = [Sample()];
-	me.sample = me.samples[0];
-
-	me.volumeEnvelope = { raw: [], enabled: false, points: [[0, 48], [10, 64], [20, 40], [30, 18], [40, 28], [50, 18]], count: 6 };
-	me.panningEnvelope = { raw: [], enabled: false, points: [[0, 32], [20, 40], [40, 24], [60, 32], [80, 32]], count: 5 };
-	me.vibrato = {};
-
-	me.sampleNumberForNotes = [];
-
-	me.play = function (noteIndex, notePeriod, volume, track, trackEffects, time) {
-		if (Tracker.inFTMode()) {
-			notePeriod = me.getPeriodForNote(noteIndex);
-		}
-		return Audio.playSample(me.instrumentIndex, notePeriod, volume, track, trackEffects, time, noteIndex);
-	};
-
-	me.noteOn = function (time) {
-		var volumeEnvelope;
-		var panningEnvelope;
-		var scheduled = {};
-
-		if (me.volumeEnvelope.enabled) {
-			volumeEnvelope = Audio.context.createGain();
-			var envelope = me.volumeEnvelope;
-			var scheduledTime = processEnvelop(envelope, volumeEnvelope, time);
-			if (scheduledTime) scheduled.volume = (time + scheduledTime);
-		}
-
-		if (me.panningEnvelope.enabled && Audio.usePanning) {
-			panningEnvelope = Audio.context.createStereoPanner();
-			envelope = me.panningEnvelope;
-			scheduledTime = processEnvelop(envelope, panningEnvelope, time);
-			if (scheduledTime) scheduled.panning = (time + scheduledTime);
-		}
-
-		if (me.vibrato.rate && me.vibrato.depth) {
-			scheduled.ticks = 0;
-			scheduled.vibrato = time;
-			scheduled.vibratoFunction = me.getAutoVibratoFunction();
-		}
-
-		return { volume: volumeEnvelope, panning: panningEnvelope, scheduled: scheduled };
-	};
-
-	me.noteOff = function (time, noteInfo) {
-		if (!noteInfo || !noteInfo.volume) return;
-
-		function cancelScheduledValues() {
-			// Note: we should cancel Volume and Panning scheduling independently ...
-			noteInfo.volume.gain.cancelScheduledValues(time);
-			noteInfo.volumeFadeOut.gain.cancelScheduledValues(time);
-
-			if (noteInfo.volumeEnvelope) noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
-			if (noteInfo.panningEnvelope) noteInfo.panningEnvelope.pan.cancelScheduledValues(time);
-			noteInfo.scheduled = undefined;
-		}
-
-
-		if (Tracker.inFTMode()) {
-			var tickTime = Tracker.getProperties().tickTime;
-
-			if (me.volumeEnvelope.enabled) {
-
-				if (me.volumeEnvelope.sustain && noteInfo.volumeEnvelope) {
-					cancelScheduledValues();
-					var timeOffset = 0;
-					var startPoint = me.volumeEnvelope.points[me.volumeEnvelope.sustainPoint];
-					if (startPoint) timeOffset = startPoint[0] * tickTime;
-					for (var p = me.volumeEnvelope.sustainPoint; p < me.volumeEnvelope.count; p++) {
-						var point = me.volumeEnvelope.points[p];
-						if (point) noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime) - timeOffset);
-					}
-				}
-
-				if (me.fadeout) {
-					var fadeOutTime = (65536 / me.fadeout) * tickTime / 2;
-					noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + fadeOutTime);
-				}
-
-			} else {
-				cancelScheduledValues();
-				noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + 0.1)
-			}
-
-			if (me.panningEnvelope.enabled && Audio.usePanning) {
-				timeOffset = 0;
-				startPoint = me.panningEnvelope.points[me.panningEnvelope.sustainPoint];
-				if (startPoint) timeOffset = startPoint[0] * tickTime;
-				for (p = me.panningEnvelope.sustainPoint; p < me.panningEnvelope.count; p++) {
-					point = me.panningEnvelope.points[p];
-					if (point) noteInfo.panningEnvelope.pan.linearRampToValueAtTime((point[1] - 32) / 32, time + (point[0] * tickTime) - timeOffset);
-				}
-			}
-
-			return 100;
-
-		} else {
-			cancelScheduledValues();
-			if (noteInfo.isKey && noteInfo.volume) {
-				noteInfo.volume.gain.linearRampToValueAtTime(0, time + 0.5)
-			} else {
-				return 0;
-			}
-		}
-
-	};
-
-	function processEnvelop(envelope, audioNode, time) {
+	static processEnvelop(envelope, audioNode, time) {
 		var tickTime = Tracker.getProperties().tickTime;
 		var maxPoint = envelope.sustain ? envelope.sustainPoint + 1 : envelope.count;
 
@@ -158,13 +57,111 @@ var Instrument = function () {
 		}
 
 		if (doLoop) {
-			return me.scheduleEnvelopeLoop(audioNode, time, 2, scheduledTime);
+			return this.scheduleEnvelopeLoop(audioNode, time, 2, scheduledTime);
 		}
 
 		return false;
 	}
 
-	me.scheduleEnvelopeLoop = function (audioNode, startTime, seconds, scheduledTime) {
+	play(noteIndex, notePeriod, volume, track, trackEffects, time) {
+		if (Tracker.inFTMode()) {
+			notePeriod = this.getPeriodForNote(noteIndex);
+		}
+		return Audio.playSample(this.instrumentIndex, notePeriod, volume, track, trackEffects, time, noteIndex);
+	};
+
+	noteOn(time) {
+		var volumeEnvelope;
+		var panningEnvelope;
+		var scheduled = {};
+
+		if (this.volumeEnvelope.enabled) {
+			volumeEnvelope = Audio.context.createGain();
+			var envelope = this.volumeEnvelope;
+			var scheduledTime = Instrument.processEnvelop(envelope, volumeEnvelope, time);
+			if (scheduledTime) scheduled.volume = (time + scheduledTime);
+		}
+
+		if (this.panningEnvelope.enabled && Audio.usePanning) {
+			panningEnvelope = Audio.context.createStereoPanner();
+			envelope = this.panningEnvelope;
+			scheduledTime = Instrument.processEnvelop(envelope, panningEnvelope, time);
+			if (scheduledTime) scheduled.panning = (time + scheduledTime);
+		}
+
+		if (this.vibrato.rate && this.vibrato.depth) {
+			scheduled.ticks = 0;
+			scheduled.vibrato = time;
+			scheduled.vibratoFunction = this.getAutoVibratoFunction();
+		}
+
+		return { volume: volumeEnvelope, panning: panningEnvelope, scheduled: scheduled };
+	};
+
+	noteOff(time, noteInfo) {
+		if (!noteInfo || !noteInfo.volume) return;
+
+		function cancelScheduledValues() {
+			// Note: we should cancel Volume and Panning scheduling independently ...
+			noteInfo.volume.gain.cancelScheduledValues(time);
+			noteInfo.volumeFadeOut.gain.cancelScheduledValues(time);
+
+			if (noteInfo.volumeEnvelope) noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
+			if (noteInfo.panningEnvelope) noteInfo.panningEnvelope.pan.cancelScheduledValues(time);
+			noteInfo.scheduled = undefined;
+		}
+
+
+		if (Tracker.inFTMode()) {
+			var tickTime = Tracker.getProperties().tickTime;
+
+			if (this.volumeEnvelope.enabled) {
+
+				if (this.volumeEnvelope.sustain && noteInfo.volumeEnvelope) {
+					cancelScheduledValues();
+					var timeOffset = 0;
+					var startPoint = this.volumeEnvelope.points[this.volumeEnvelope.sustainPoint];
+					if (startPoint) timeOffset = startPoint[0] * tickTime;
+					for (var p = this.volumeEnvelope.sustainPoint; p < this.volumeEnvelope.count; p++) {
+						var point = this.volumeEnvelope.points[p];
+						if (point) noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime) - timeOffset);
+					}
+				}
+
+				if (this.fadeout) {
+					var fadeOutTime = (65536 / me.fadeout) * tickTime / 2;
+					noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + fadeOutTime);
+				}
+
+			} else {
+				cancelScheduledValues();
+				noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + 0.1)
+			}
+
+			if (this.panningEnvelope.enabled && Audio.usePanning) {
+				timeOffset = 0;
+				startPoint = this.panningEnvelope.points[me.panningEnvelope.sustainPoint];
+				if (startPoint) timeOffset = startPoint[0] * tickTime;
+				for (p = this.panningEnvelope.sustainPoint; p < this.panningEnvelope.count; p++) {
+					point = this.panningEnvelope.points[p];
+					if (point) noteInfo.panningEnvelope.pan.linearRampToValueAtTime((point[1] - 32) / 32, time + (point[0] * tickTime) - timeOffset);
+				}
+			}
+
+			return 100;
+
+		} else {
+			cancelScheduledValues();
+			if (noteInfo.isKey && noteInfo.volume) {
+				noteInfo.volume.gain.linearRampToValueAtTime(0, time + 0.5)
+			} else {
+				return 0;
+			}
+		}
+
+	};
+
+	scheduleEnvelopeLoop(audioNode, startTime, seconds, scheduledTime) {
 
 		// note - this is not 100% accurate when the ticktime would change during the scheduled ahead time
 
@@ -173,13 +170,13 @@ var Instrument = function () {
 
 		if (audioNode.gain) {
 			// volume
-			var envelope = me.volumeEnvelope;
+			var envelope = this.volumeEnvelope;
 			var audioParam = audioNode.gain;
 			var center = 0;
 			var max = 64;
 		} else {
 			// panning node
-			envelope = me.panningEnvelope;
+			envelope = this.panningEnvelope;
 			audioParam = audioNode.pan;
 			center = 32;
 			max = 32;
@@ -204,14 +201,14 @@ var Instrument = function () {
 	};
 
 
-	me.scheduleAutoVibrato = function (note, seconds) {
+	scheduleAutoVibrato(note, seconds) {
 		// this is only used for keyboard notes as in the player the main playback timer is used for this
 		var scheduledTime = 0;
 		note.scheduled.ticks = note.scheduled.ticks || 0;
 		var tickTime = Tracker.getProperties().tickTime;
 
-		var freq = -me.vibrato.rate / 40;
-		var amp = me.vibrato.depth / 8;
+		var freq = -this.vibrato.rate / 40;
+		var amp = this.vibrato.depth / 8;
 		if (Tracker.useLinearFrequency) amp *= 4;
 
 		var currentPeriod, vibratoFunction, time, tick;
@@ -228,8 +225,8 @@ var Instrument = function () {
 
 			if (currentPeriod) {
 				var sweepAmp = 1;
-				if (me.vibrato.sweep && note.scheduled.ticks < me.vibrato.sweep) {
-					sweepAmp = 1 - ((me.vibrato.sweep - note.scheduled.ticks) / me.vibrato.sweep);
+				if (this.vibrato.sweep && note.scheduled.ticks < this.vibrato.sweep) {
+					sweepAmp = 1 - ((this.vibrato.sweep - note.scheduled.ticks) / this.vibrato.sweep);
 				}
 
 				var targetPeriod = vibratoFunction(currentPeriod, note.scheduled.ticks, freq, amp * sweepAmp);
@@ -242,8 +239,8 @@ var Instrument = function () {
 		return scheduledTime;
 	};
 
-	me.getAutoVibratoFunction = function () {
-		switch (me.vibrato.type) {
+	getAutoVibratoFunction() {
+		switch (this.vibrato.type) {
 			case 1: return Audio.waveFormFunction.square;
 			case 2: return Audio.waveFormFunction.saw;
 			case 3: return Audio.waveFormFunction.sawInverse;
@@ -251,7 +248,7 @@ var Instrument = function () {
 		return Audio.waveFormFunction.sine;
 	};
 
-	me.resetVolume = function (time, noteInfo) {
+	resetVolume(time, noteInfo) {
 		if (noteInfo.volumeFadeOut) {
 			noteInfo.volumeFadeOut.gain.cancelScheduledValues(time);
 			noteInfo.volumeFadeOut.gain.setValueAtTime(1, time);
@@ -261,75 +258,73 @@ var Instrument = function () {
 			noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
 			var tickTime = Tracker.getProperties().tickTime;
 
-			var maxPoint = me.volumeEnvelope.sustain ? me.volumeEnvelope.sustainPoint + 1 : me.volumeEnvelope.count;
+			var maxPoint = this.volumeEnvelope.sustain ? this.volumeEnvelope.sustainPoint + 1 : this.volumeEnvelope.count;
 			noteInfo.volumeEnvelope.gain.setValueAtTime(me.volumeEnvelope.points[0][1] / 64, time);
 			for (var p = 1; p < maxPoint; p++) {
-				var point = me.volumeEnvelope.points[p];
+				var point = this.volumeEnvelope.points[p];
 				noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime));
 			}
 		}
 	};
 
-	me.getFineTune = function () {
-		return Tracker.inFTMode() ? me.sample.finetuneX : me.sample.finetune;
+	getFineTune() {
+		return Tracker.inFTMode() ? this.sample.finetuneX : this.sample.finetune;
 	};
 
-	me.setFineTune = function (finetune) {
+	setFineTune(finetune) {
 		if (Tracker.inFTMode()) {
-			me.sample.finetuneX = finetune;
-			me.sample.finetune = finetune >> 4;
+			this.sample.finetuneX = finetune;
+			this.sample.finetune = finetune >> 4;
 		} else {
 			if (finetune > 7) finetune = finetune - 15;
-			me.sample.finetune = finetune;
-			me.sample.finetuneX = finetune << 4;
+			this.sample.finetune = finetune;
+			this.sample.finetuneX = finetune << 4;
 		}
 	};
 
 	// in FT mode
-	me.getPeriodForNote = function (noteIndex, withFineTune) {
+	getPeriodForNote(noteIndex, withFineTune) {
 		var result = 0;
 
 		if (Tracker.useLinearFrequency) {
 			result = 7680 - (noteIndex - 1) * 64;
-			if (withFineTune) result -= me.getFineTune() / 2;
+			if (withFineTune) result -= this.getFineTune() / 2;
 		} else {
 			result = Tracker.FTNotes[noteIndex].period;
-			if (withFineTune && me.getFineTune()) {
-				result = Audio.getFineTuneForNote(noteIndex, me.getFineTune());
+			if (withFineTune && this.getFineTune()) {
+				result = Audio.getFineTuneForNote(noteIndex, this.getFineTune());
 			}
 		}
 
 		return result;
 	};
 
-	me.setSampleForNoteIndex = function (noteIndex) {
-		var sampleIndex = me.sampleNumberForNotes[noteIndex - 1];
-		if (sampleIndex !== me.sampleIndex && typeof sampleIndex === "number") {
-			me.setSampleIndex(sampleIndex);
+	setSampleForNoteIndex(noteIndex) {
+		var sampleIndex = this.sampleNumberForNotes[noteIndex - 1];
+		if (sampleIndex !== this.sampleIndex && typeof sampleIndex === 'number') {
+			this.setSampleIndex(sampleIndex);
 		}
 	};
 
-	me.setSampleIndex = function (index) {
-		if (me.sampleIndex !== index) {
-			me.sample = me.samples[index];
-			me.sampleIndex = index;
+	setSampleIndex(index) {
+		if (this.sampleIndex !== index) {
+			this.sample = this.samples[index];
+			this.sampleIndex = index;
 
-			EventBus.trigger(EVENT.sampleIndexChange, me.instrumentIndex);
+			EventBus.trigger(EVENT.sampleIndexChange, this.instrumentIndex);
 		}
 	};
 
-	me.hasSamples = function () {
-		for (var i = 0, max = me.samples.length; i < max; i++) {
-			if (me.samples[i].length) return true;
+	hasSamples() {
+		for (var i = 0, max = this.samples.length; i < max; i++) {
+			if (this.samples[i].length) {
+				return true;
+			}
 		}
 	};
 
-	me.hasVibrato = function () {
-		return me.vibrato.rate && me.vibrato.depth;
+	hasVibrato() {
+		return this.vibrato.rate && this.vibrato.depth;
 	};
 
-
-	return me;
-};
-
-module.exports = Instrument;
+}

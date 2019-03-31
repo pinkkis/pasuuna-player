@@ -1,5 +1,8 @@
-window.Tracker = require('./tracker')();
-window.Audio = require('./audio')(Tracker);
+import {Tracker as T} from './tracker';
+import {Audio as A} from './audio';
+
+window.Tracker = T();
+window.Audio = A(Tracker);
 
 window.BassoonTracker = {
 	init: () => { Audio.init(); Tracker.init(); },

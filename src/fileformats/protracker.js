@@ -1,14 +1,10 @@
-const Note = require('../models/note');
-const Instrument = require('../models/instrument');
-const EventBus = require('../eventBus');
-const {BinaryStream} = require('../filesystem');
+import { Note } from '../models/note';
+import { Instrument } from '../models/instrument';
+import { BinaryStream } from '../filesystem';
+import { EVENT, LOOPTYPE, TRACKERMODE, SETTINGS } from '../enum';
+import { bus as EventBus } from '../eventBus';
 
-const {EVENT,
-	LOOPTYPE,
-	TRACKERMODE,
-	SETTINGS} = require('../enum');
-
-var ProTracker = function () {
+export const ProTracker = function () {
 	var me = {};
 
 	me.load = function (file, name) {
@@ -55,7 +51,7 @@ var ProTracker = function () {
 			var instrumentName = file.readString(22);
 			var sampleLength = file.readWord(); // in words
 
-			var instrument = Instrument();
+			var instrument = new Instrument();
 			instrument.name = instrumentName;
 
 			instrument.sample.length = instrument.sample.realLen = sampleLength << 1;
@@ -101,7 +97,7 @@ var ProTracker = function () {
 				var row = [];
 				var channel;
 				for (channel = 0; channel < channelCount; channel++) {
-					var note = Note();
+					var note = new Note();
 					var trackStepInfo = file.readUint();
 
 					note.setPeriod((trackStepInfo >> 16) & 0x0fff);
@@ -115,7 +111,7 @@ var ProTracker = function () {
 				// fill with empty data for other channels
 				// TODO: not needed anymore ?
 				for (channel = channelCount; channel < Tracker.getTrackCount(); channel++) {
-					row.push(Note())
+					row.push(new Note())
 				}
 
 
@@ -143,7 +139,7 @@ var ProTracker = function () {
 					instrument.sample.length = sampleEnd;
 				}
 
-				for (j = 0; j < sampleEnd; j++) {
+				for (let j = 0; j < sampleEnd; j++) {
 					var b = file.readByte();
 					// ignore first 2 bytes
 					if (j < 2) b = 0;
@@ -309,5 +305,3 @@ var ProTracker = function () {
 
 	return me;
 };
-
-module.exports = ProTracker;

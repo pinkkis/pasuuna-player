@@ -1,14 +1,12 @@
-const Sample = require('../models/sample');
-const Note = require('../models/note');
-const Instrument = require('../models/instrument');
-const EventBus = require('../eventBus');
-const {BinaryStream} = require('../filesystem');
+import { Sample } from '../models/sample';
+import { Note } from '../models/note';
+import { Instrument } from '../models/instrument';
+import { BinaryStream } from '../filesystem';
+import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
 
-const { EVENT,
-	LOOPTYPE,
-	TRACKERMODE} = require('../enum');
+import { bus as EventBus } from '../eventBus';
 
-var FastTracker = function () {
+export const FastTracker = function () {
 	var me = {};
 
 	// see ftp://ftp.modland.com/pub/documents/format_documentation/FastTracker%202%20v2.04%20(.xm).html
@@ -84,7 +82,7 @@ var FastTracker = function () {
 				var row = [];
 				var channel;
 				for (channel = 0; channel < mod.numberOfChannels; channel++) {
-					var note = Note();
+					var note = new Note();
 					var v = file.readUbyte();
 
 					if (v & 128) {
@@ -119,7 +117,7 @@ var FastTracker = function () {
 		for (i = 1; i <= mod.numberOfInstruments; ++i) {
 
 
-			var instrument = Instrument();
+			var instrument = new Instrument();
 
 			try {
 				instrument.filePosition = file.index;
@@ -599,5 +597,3 @@ var FastTracker = function () {
 
 	return me;
 };
-
-module.exports = FastTracker;

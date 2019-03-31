@@ -1,21 +1,21 @@
-var cachedAssets = {
+export const cachedAssets = {
 	images: {},
 	audio: {},
 	json: {},
 	arrayBuffer: {}
 };
 
-var sprites = {};
-var UI = undefined;
+export const sprites = {};
+export const UI = undefined;
 
-var PRELOADTYPE = {
+export const PRELOADTYPE = {
 	"image": 1,
 	"audio": 2,
 	"json": 3,
 	"binary": 4
 };
 
-var EVENT = {
+export const EVENT = {
 	instrumentChange: 1,
 	patternChange: 2,
 	patternPosChange: 3,
@@ -67,51 +67,24 @@ var EVENT = {
 	commandSelectAll: 52
 };
 
-// var COMMAND = {
-// 	newFile: 1,
-// 	openFile: 2,
-// 	saveFile: 3,
-// 	clearTrack: 4,
-// 	clearPattern: 5,
-// 	clearSong: 6,
-// 	clearInstruments: 7,
-// 	showMain: 8,
-// 	showOptions: 9,
-// 	showFileOperations: 10,
-// 	showSampleEditor: 11,
-// 	showAbout: 12,
-// 	showHelp: 13,
-// 	togglePiano: 14,
-// 	showTopMain: 15,
-// 	showBottomMain: 16,
-// 	randomSong: 17,
-// 	randomSongXM: 18,
-// 	showGithub: 19,
-// 	showStats: 20,
-// 	cut: 21,
-// 	copy: 22,
-// 	paste: 23,
-// 	pattern2Sample: 24
-// };
-
-var PLAYTYPE = {
+export const PLAYTYPE = {
 	song: 1,
 	pattern: 2
 };
 
-var FILETYPE = {
+export const FILETYPE = {
 	module: 1,
 	sample: 2,
 	pattern: 3,
 	track: 4
 };
 
-var MODULETYPE = {
+export const MODULETYPE = {
 	mod: 1,
 	xm: 2
 };
 
-var SAMPLETYPE = {
+export const SAMPLETYPE = {
 	RAW_8BIT: 1,
 	WAVE_PCM: 2,
 	IFF_8SVX: 3,
@@ -120,24 +93,24 @@ var SAMPLETYPE = {
 	RIFF_16BIT: 6
 };
 
-var STEREOSEPARATION = {
+export const STEREOSEPARATION = {
 	FULL: 1,
 	BALANCED: 2,
 	NONE: 3
 };
 
-var FREQUENCYTABLE = {
+export const FREQUENCYTABLE = {
 	AMIGA: 1,
 	LINEAR: 2
 };
 
-var LOOPTYPE = {
+export const LOOPTYPE = {
 	NONE: 0,
 	FORWARD: 1,
 	PINGPONG: 2
 };
 
-var SELECTION = {
+export const SELECTION = {
 	RESET: 1,
 	CLEAR: 2,
 	CUT: 3,
@@ -149,16 +122,16 @@ var SELECTION = {
 
 
 // Amiga Frequency
-//var PALFREQUENCY = 7093789.2;
-var AMIGA_PALFREQUENCY = 7093790; // not that my ears can hear the difference but this seems to be the correct value  ftp://ftp.modland.com/pub/documents/format_documentation/Protracker%20effects%20(MODFIL12.TXT)%20(.mod).txt
+//export const PALFREQUENCY = 7093789.2;
+export const AMIGA_PALFREQUENCY = 7093790; // not that my ears can hear the difference but this seems to be the correct value  ftp://ftp.modland.com/pub/documents/format_documentation/Protracker%20effects%20(MODFIL12.TXT)%20(.mod).txt
 
 // Frequency used by Fast Tracker in Amiga mode
-var PC_FREQUENCY = 7158728;
+export const PC_FREQUENCY = 7158728;
 
-var AMIGA_PALFREQUENCY_HALF = AMIGA_PALFREQUENCY / 2;
-var PC_FREQUENCY_HALF = PC_FREQUENCY / 2;
+export const AMIGA_PALFREQUENCY_HALF = AMIGA_PALFREQUENCY / 2;
+export const PC_FREQUENCY_HALF = PC_FREQUENCY / 2;
 
-var LAYOUTS = {
+export const LAYOUTS = {
 	column4: 4,
 	column5: 5,
 	column5Full: 6,
@@ -168,7 +141,7 @@ var LAYOUTS = {
 
 
 // used in Protracker mode
-var NOTEPERIOD = {
+export const NOTEPERIOD = {
 	C1: { period: 856, name: "C-1", tune: [907, 900, 894, 887, 881, 875, 868, 862, 856, 850, 844, 838, 832, 826, 820, 814] },
 	Cs1: { period: 808, name: "C#1", tune: [856, 850, 844, 838, 832, 826, 820, 814, 808, 802, 796, 791, 785, 779, 774, 768] },
 	D1: { period: 762, name: "D-1", tune: [808, 802, 796, 791, 785, 779, 774, 768, 762, 757, 752, 746, 741, 736, 730, 725] },
@@ -208,7 +181,7 @@ var NOTEPERIOD = {
 };
 
 // used in Fasttracker - Amiga frequency mode
-var FTNOTEPERIOD = {
+export const FTNOTEPERIOD = {
 	None: { name: "---" },
 	C0: { name: "C-0", period: 6848 },
 	Cs0: { name: "C#0", period: 6464 },
@@ -361,40 +334,9 @@ var FTNOTEPERIOD = {
 	OFF: { name: "OFF", period: 0 }
 };
 
-var NOTEOFF = 145;
+export const NOTEOFF = 145;
 
-// var KEYBOARDKEYS = {
-// 	OFF: 0,
-// 	C: 1,
-// 	Csharp: 2,
-// 	D: 3,
-// 	Dsharp: 4,
-// 	E: 5,
-// 	F: 6,
-// 	Fsharp: 7,
-// 	G: 8,
-// 	Gsharp: 9,
-// 	A: 10,
-// 	Asharp: 11,
-// 	B: 12,
-// 	COctaveUp: 13,
-// 	CsharpOctaveUp: 14,
-// 	DOctaveUp: 15,
-// 	DsharpOctaveUp: 16,
-// 	EOctaveUp: 17,
-// 	FOctaveUp: 18,
-// 	FsharpOctaveUp: 19,
-// 	GOctaveUp: 20,
-// 	GsharpOctaveUp: 21,
-// 	AOctaveUp: 22,
-// 	AsharpOctaveUp: 23,
-// 	BOctaveUp: 24,
-// 	COctaveUp2: 25,
-// 	CsharpOctaveUp2: 26,
-// 	DOctaveUp2: 27
-// };
-
-var OCTAVENOTES = {
+export const OCTAVENOTES = {
 	0: { name: "OFF" },
 	1: { name: "C" },
 	2: { name: "Cs" },
@@ -410,194 +352,15 @@ var OCTAVENOTES = {
 	12: { name: "B" }
 };
 
-
-// var KEYBOARDTABLE = {
-// 	azerty: {
-// 		a: KEYBOARDKEYS.COctaveUp,
-// 		z: KEYBOARDKEYS.DOctaveUp,
-// 		e: KEYBOARDKEYS.EOctaveUp,
-// 		r: KEYBOARDKEYS.FOctaveUp,
-// 		t: KEYBOARDKEYS.GOctaveUp,
-// 		y: KEYBOARDKEYS.AOctaveUp,
-// 		u: KEYBOARDKEYS.BOctaveUp,
-// 		i: KEYBOARDKEYS.COctaveUp2,
-// 		o: KEYBOARDKEYS.DOctaveUp2,
-
-// 		"é": KEYBOARDKEYS.CsharpOctaveUp,
-// 		'"': KEYBOARDKEYS.DsharpOctaveUp,
-// 		"(": KEYBOARDKEYS.FsharpOctaveUp,
-// 		"§": KEYBOARDKEYS.GsharpOctaveUp,
-// 		"è": KEYBOARDKEYS.AsharpOctaveUp,
-// 		"ç": KEYBOARDKEYS.CsharpOctaveUp2,
-
-// 		w: KEYBOARDKEYS.C,
-// 		x: KEYBOARDKEYS.D,
-// 		c: KEYBOARDKEYS.E,
-// 		v: KEYBOARDKEYS.F,
-// 		b: KEYBOARDKEYS.G,
-// 		n: KEYBOARDKEYS.A,
-// 		",": KEYBOARDKEYS.B,
-// 		";": KEYBOARDKEYS.COctaveUp,
-// 		":": KEYBOARDKEYS.DOctaveUp,
-
-// 		s: KEYBOARDKEYS.Csharp,
-// 		d: KEYBOARDKEYS.Dsharp,
-// 		g: KEYBOARDKEYS.Fsharp,
-// 		h: KEYBOARDKEYS.Gsharp,
-// 		j: KEYBOARDKEYS.Asharp,
-
-// 		"<": KEYBOARDKEYS.OFF
-// 	},
-// 	dvorak: {
-// 		"\'": KEYBOARDKEYS.COctaveUp,
-// 		',': KEYBOARDKEYS.DOctaveUp,
-// 		'.': KEYBOARDKEYS.EOctaveUp,
-// 		p: KEYBOARDKEYS.FOctaveUp,
-// 		y: KEYBOARDKEYS.GOctaveUp,
-// 		f: KEYBOARDKEYS.AOctaveUp,
-// 		g: KEYBOARDKEYS.BOctaveUp,
-// 		c: KEYBOARDKEYS.COctaveUp2,
-// 		r: KEYBOARDKEYS.DOctaveUp2,
-
-// 		"2": KEYBOARDKEYS.CsharpOctaveUp,
-// 		'3': KEYBOARDKEYS.DsharpOctaveUp,
-// 		"5": KEYBOARDKEYS.FsharpOctaveUp,
-// 		"6": KEYBOARDKEYS.GsharpOctaveUp,
-// 		"7": KEYBOARDKEYS.AsharpOctaveUp,
-// 		"9": KEYBOARDKEYS.CsharpOctaveUp2,
-
-// 		';': KEYBOARDKEYS.C,
-// 		q: KEYBOARDKEYS.D,
-// 		j: KEYBOARDKEYS.E,
-// 		k: KEYBOARDKEYS.F,
-// 		x: KEYBOARDKEYS.G,
-// 		b: KEYBOARDKEYS.A,
-// 		m: KEYBOARDKEYS.B,
-// 		w: KEYBOARDKEYS.COctaveUp,
-// 		v: KEYBOARDKEYS.DOctaveUp,
-
-// 		o: KEYBOARDKEYS.Csharp,
-// 		e: KEYBOARDKEYS.Dsharp,
-// 		i: KEYBOARDKEYS.Fsharp,
-// 		d: KEYBOARDKEYS.Gsharp,
-// 		h: KEYBOARDKEYS.Asharp,
-// 		n: KEYBOARDKEYS.CsharpOctaveUp,
-
-// 		"\\": KEYBOARDKEYS.OFF
-// 	},
-// 	qwerty: {
-// 		q: KEYBOARDKEYS.COctaveUp,
-// 		w: KEYBOARDKEYS.DOctaveUp,
-// 		e: KEYBOARDKEYS.EOctaveUp,
-// 		r: KEYBOARDKEYS.FOctaveUp,
-// 		t: KEYBOARDKEYS.GOctaveUp,
-// 		y: KEYBOARDKEYS.AOctaveUp,
-// 		u: KEYBOARDKEYS.BOctaveUp,
-// 		i: KEYBOARDKEYS.COctaveUp2,
-// 		o: KEYBOARDKEYS.DOctaveUp2,
-
-// 		"2": KEYBOARDKEYS.CsharpOctaveUp,
-// 		'3': KEYBOARDKEYS.DsharpOctaveUp,
-// 		"5": KEYBOARDKEYS.FsharpOctaveUp,
-// 		"6": KEYBOARDKEYS.GsharpOctaveUp,
-// 		"7": KEYBOARDKEYS.AsharpOctaveUp,
-// 		"9": KEYBOARDKEYS.CsharpOctaveUp2,
-
-// 		z: KEYBOARDKEYS.C,
-// 		x: KEYBOARDKEYS.D,
-// 		c: KEYBOARDKEYS.E,
-// 		v: KEYBOARDKEYS.F,
-// 		b: KEYBOARDKEYS.G,
-// 		n: KEYBOARDKEYS.A,
-// 		m: KEYBOARDKEYS.B,
-// 		",": KEYBOARDKEYS.COctaveUp,
-// 		".": KEYBOARDKEYS.DOctaveUp,
-
-// 		s: KEYBOARDKEYS.Csharp,
-// 		d: KEYBOARDKEYS.Dsharp,
-// 		g: KEYBOARDKEYS.Fsharp,
-// 		h: KEYBOARDKEYS.Gsharp,
-// 		j: KEYBOARDKEYS.Asharp,
-
-// 		"\\": KEYBOARDKEYS.OFF
-// 	},
-// 	qwertz: {
-// 		q: KEYBOARDKEYS.COctaveUp,
-// 		w: KEYBOARDKEYS.DOctaveUp,
-// 		e: KEYBOARDKEYS.EOctaveUp,
-// 		r: KEYBOARDKEYS.FOctaveUp,
-// 		t: KEYBOARDKEYS.GOctaveUp,
-// 		z: KEYBOARDKEYS.AOctaveUp,
-// 		u: KEYBOARDKEYS.BOctaveUp,
-// 		i: KEYBOARDKEYS.COctaveUp2,
-// 		o: KEYBOARDKEYS.DOctaveUp2,
-
-// 		"2": KEYBOARDKEYS.CsharpOctaveUp,
-// 		'3': KEYBOARDKEYS.DsharpOctaveUp,
-// 		"5": KEYBOARDKEYS.FsharpOctaveUp,
-// 		"6": KEYBOARDKEYS.GsharpOctaveUp,
-// 		"7": KEYBOARDKEYS.AsharpOctaveUp,
-// 		"9": KEYBOARDKEYS.CsharpOctaveUp2,
-
-// 		y: KEYBOARDKEYS.C,
-// 		x: KEYBOARDKEYS.D,
-// 		c: KEYBOARDKEYS.E,
-// 		v: KEYBOARDKEYS.F,
-// 		b: KEYBOARDKEYS.G,
-// 		n: KEYBOARDKEYS.A,
-// 		m: KEYBOARDKEYS.B,
-// 		",": KEYBOARDKEYS.COctaveUp,
-// 		".": KEYBOARDKEYS.DOctaveUp,
-
-// 		s: KEYBOARDKEYS.Csharp,
-// 		d: KEYBOARDKEYS.Dsharp,
-// 		g: KEYBOARDKEYS.Fsharp,
-// 		h: KEYBOARDKEYS.Gsharp,
-// 		j: KEYBOARDKEYS.Asharp,
-
-// 		"\\": KEYBOARDKEYS.OFF
-// 	}
-// };
-
-var TRACKERMODE = {
+export const TRACKERMODE = {
 	PROTRACKER: 1,
 	FASTTRACKER: 2
 };
 
-var SETTINGS = {
+export const SETTINGS = {
 	unrollLoops: false,
-	unrollShortLoops: false, // Note: the conversion between byte_length loops (amiga) and time-based loops (Web Audio) is not 100% accurate for very short loops
+	unrollShortLoops: false,
 	sustainKeyboardNotes: false,
-	// useHover: true,
-	// keyboardTable: "qwerty",
-	// vubars: true,
 	stereoSeparation: STEREOSEPARATION.BALANCED,
 	emulateProtracker1OffsetBug: true
-};
-
-module.exports = {
-	cachedAssets,
-	sprites,
-	UI,
-	PRELOADTYPE,
-	EVENT,
-	PLAYTYPE,
-	FILETYPE,
-	MODULETYPE,
-	SAMPLETYPE,
-	STEREOSEPARATION,
-	FREQUENCYTABLE,
-	LOOPTYPE,
-	SELECTION,
-	AMIGA_PALFREQUENCY,
-	PC_FREQUENCY,
-	AMIGA_PALFREQUENCY_HALF,
-	PC_FREQUENCY_HALF,
-	LAYOUTS,
-	NOTEPERIOD,
-	FTNOTEPERIOD,
-	NOTEOFF,
-	OCTAVENOTES,
-	TRACKERMODE,
-	SETTINGS
 };

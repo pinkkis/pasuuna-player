@@ -1,15 +1,17 @@
-const EventBus = require('./eventBus');
-const FilterChain = require('./audio/filterChain');
+import { bus as EventBus } from './eventBus';
+import { FilterChain } from './audio/filterChain';
 
-const {	EVENT,
+import {
+	EVENT,
 	STEREOSEPARATION,
 	AMIGA_PALFREQUENCY_HALF,
 	PC_FREQUENCY_HALF,
 	NOTEPERIOD,
 	NOTEOFF,
-	SETTINGS} = require('./enum');
+	SETTINGS
+} from './enum';
 
-var Audio = function (Tracker) {
+export const Audio = function (Tracker) {
 	var me = {};
 
 	window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -72,7 +74,6 @@ var Audio = function (Tracker) {
 	}
 
 	me.init = function (audioContext) {
-
 		audioContext = audioContext || context;
 		if (!audioContext) return;
 
@@ -88,8 +89,8 @@ var Audio = function (Tracker) {
 		filterChains = [];
 
 		function addFilterChain() {
-			var filterChain = FilterChain(filters);
-			filterChain.output().connect(lowPassfilter);
+			var filterChain = new FilterChain(me, filters);
+			filterChain.output.connect(lowPassfilter);
 			filterChains.push(filterChain);
 		}
 
@@ -279,9 +280,9 @@ var Audio = function (Tracker) {
 				var panning = me.context.createStereoPanner();
 				panning.pan.setValueAtTime(pan, time);
 				volumeFadeOut.connect(panning);
-				panning.connect(filterChains[track].input());
+				panning.connect(filterChains[track].input);
 			} else {
-				volumeFadeOut.connect(filterChains[track].input());
+				volumeFadeOut.connect(filterChains[track].input);
 			}
 
 
@@ -706,5 +707,3 @@ var Audio = function (Tracker) {
 	return me;
 
 };
-
-module.exports = Audio;

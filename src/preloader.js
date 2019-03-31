@@ -1,7 +1,6 @@
-const {	cachedAssets,
-	PRELOADTYPE } = require('./enum');
+import { cachedAssets, PRELOADTYPE } from './enum';
 
-var PreLoader = function () {
+export const PreLoader = function () {
 	var me = {};
 
 	me.load = function (urls, type, next) {
@@ -69,5 +68,3 @@ var PreLoader = function () {
 
 	return me;
 };
-
-module.exports = PreLoader;

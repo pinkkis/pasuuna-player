@@ -1,4 +1,4 @@
-function loadFile(url, next) {
+export function loadFile(url, next) {
 	var req = new XMLHttpRequest();
 	req.open("GET", url, true);
 	req.responseType = "arraybuffer";
@@ -14,7 +14,7 @@ function loadFile(url, next) {
 	req.send(null);
 }
 
-function BinaryStream(arrayBuffer, bigEndian) {
+export function BinaryStream(arrayBuffer, bigEndian) {
 	var obj = {
 		index: 0,
 		litteEndian: !bigEndian
@@ -173,8 +173,3 @@ function BinaryStream(arrayBuffer, bigEndian) {
 
 	return obj;
 }
-
-module.exports = {
-	loadFile,
-	BinaryStream,
-};

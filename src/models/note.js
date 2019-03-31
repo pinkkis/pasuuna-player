@@ -1,62 +1,56 @@
-var Note = function () {
-	var me = {};
+export class Note {
+	constructor() {
+		this.period = 0;
+		this.index = 0;
+		this.effect = 0;
+		this.instrument = 0;
+		this.param = 0;
+		this.volumeEffect = 0;
+	}
 
-	me.period = 0;
-	me.index = 0;
-	me.effect = 0;
-	me.instrument = 0;
-	me.param = 0;
-	me.volumeEffect = 0;
-
-
-	me.setPeriod = function (period) {
-		me.period = period;
-		me.index = Tracker.FTPeriods[period] || 0;
+	setPeriod(period) {
+		this.period = period;
+		this.index = Tracker.FTPeriods[period] || 0;
 	};
 
-	me.setIndex = function (index) {
-		me.index = index;
+	setIndex(index) {
+		this.index = index;
 		var ftNote = Tracker.FTNotes[index];
 		if (ftNote) {
-			me.period = ftNote.modPeriod || ftNote.period;
-			if (me.period === 1) me.period = 0;
+			this.period = ftNote.modPeriod || ftNote.period;
+			if (this.period === 1) this.period = 0;
 		} else {
 			console.warn("No note for index " + index);
-			me.period = 0;
+			this.period = 0;
 		}
 	};
 
-	me.clear = function () {
-		me.instrument = 0;
-		me.period = 0;
-		me.effect = 0;
-		me.param = 0;
-		me.index = 0;
-		me.volumeEffect = 0;
+	clear() {
+		this.instrument = 0;
+		this.period = 0;
+		this.effect = 0;
+		this.param = 0;
+		this.index = 0;
+		this.volumeEffect = 0;
 	};
 
-	me.duplicate = function () {
+	duplicate() {
 		return {
-			instrument: me.instrument,
-			period: me.period,
-			effect: me.effect,
-			param: me.param,
-			volumeEffect: me.volumeEffect,
-			note: me.index
+			instrument: this.instrument,
+			period: this.period,
+			effect: this.effect,
+			param: this.param,
+			volumeEffect: this.volumeEffect,
+			note: this.index
 		}
 	};
 
-	me.populate = function (data) {
-		me.instrument = data.instrument || 0;
-		me.period = data.period || 0;
-		me.effect = data.effect || 0;
-		me.param = data.param || 0;
-		me.volumeEffect = data.volumeEffect || 0;
-		me.index = data.note || data.index || 0;
+	populate(data) {
+		this.instrument = data.instrument || 0;
+		this.period = data.period || 0;
+		this.effect = data.effect || 0;
+		this.param = data.param || 0;
+		this.volumeEffect = data.volumeEffect || 0;
+		this.index = data.note || data.index || 0;
 	};
-
-
-	return me;
-};
-
-module.exports = Note;
+}

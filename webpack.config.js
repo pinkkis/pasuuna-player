@@ -6,18 +6,24 @@ module.exports = {
 		filename: 'bassoonplayer.js'
 	},
 	entry: {
-		player: ['./src/player.js']
+		player: ['./src/BassoonPlayer.js']
 	},
 	module: {
 		rules: [{
-			test: /\.[t|j]sx?$/,
-			use: 'babel-loader',
+			test: /\.m?[t|j]sx?$/,
+			use: {
+				loader: 'babel-loader',
+				options: {
+					presets: ['@babel/preset-env'],
+					plugins: ['@babel/plugin-transform-runtime', '@babel/proposal-class-properties', '@babel/proposal-object-rest-spread',]
+				},
+			},
 			exclude: /node_modules/
 		},
 		{
 			test: /\.map.js$/,
 			use: 'source-map-loader',
-			enforce: "pre"
+			enforce: 'pre'
 		},
 		]
 	},

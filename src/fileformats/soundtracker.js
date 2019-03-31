@@ -1,11 +1,8 @@
-const Instrument = require('../models/instrument');
-const EventBus = require('../eventBus');
+import { Instrument } from '../models/instrument';
+import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
+import { bus as EventBus } from '../eventBus';
 
-const {EVENT,
-	LOOPTYPE,
-	TRACKERMODE} = require('../enum');
-
-var SoundTracker = function () {
+export const SoundTracker = function () {
 	var me = {};
 
 	me.load = function (file, name) {
@@ -35,7 +32,7 @@ var SoundTracker = function () {
 			var sampleName = file.readString(22);
 			var sampleLength = file.readWord(); // in words
 
-			var instrument = Instrument();
+			var instrument = new Instrument();
 			instrument.name = sampleName;
 
 			instrument.sample.length = instrument.realLen = sampleLength << 1;
@@ -133,5 +130,3 @@ var SoundTracker = function () {
 
 	return me;
 };
-
-module.exports = SoundTracker;

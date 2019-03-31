@@ -1,6 +1,4 @@
-const Host = require('./host');
-
-var FetchService = (function () {
+export const FetchService = (function () {
 
 	// somewhat Jquery syntax compatible for easy portability
 
@@ -83,7 +81,7 @@ var FetchService = (function () {
 
 		var url = config.url;
 
-		if (typeof config.cache === "boolean" && !config.cache && Host.useUrlParams) {
+		if (typeof config.cache === "boolean" && !config.cache) {
 			var r = new Date().getTime();
 			url += url.indexOf("?") > 0 ? "&r=" + r : "?r=" + r;
 		}
@@ -132,5 +130,3 @@ var FetchService = (function () {
 
 	return me;
 }());
-
-module.exports = FetchService;

@@ -1,4 +1,4 @@
-function getUrlParameter(param) {
+export function getUrlParameter(param) {
 	if (window.location.getParameter) {
 		return window.location.getParameter(param);
 	} else if (location.search) {
@@ -12,7 +12,3 @@ function getUrlParameter(param) {
 		}
 	}
 }
-
-module.exports = {
-	getUrlParameter,
-};

@@ -1,36 +1,29 @@
-var Sample = function () {
-	var me = {};
+export class Sample {
+	constructor() {
+		this.data = [];
+		this.length = 0;
+		this.name = '';
+		this.bits = 8;
+		this.volume = 64;
+		this.finetune = 0;
+		this.finetuneX = 0;
+		this.panning = 0;
+		this.relativeNote = 0;
+		this.loop = {
+			enabled: false,
+			start: 0,
+			length: 0,
+			type: 0
+		};
+	}
 
-	me.data = [];
-	me.length = 0;
-	me.name = "";
-	me.bits = 8;
-
-	me.volume = 64;
-	me.finetune = 0;
-	me.finetuneX = 0;
-	me.panning = 0;
-	me.relativeNote = 0;
-
-	me.loop = {
-		enabled: false,
-		start: 0,
-		length: 0,
-		type: 0
-	};
-
-	me.check = function () {
-		var min = 0;
-		var max = 0;
-		for (var i = 0, len = me.data.length; i < len; i++) {
-			min = Math.min(min, me.data[i]);
-			max = Math.max(max, me.data[i]);
+	check() {
+		let min = 0;
+		let max = 0;
+		for (var i = 0, len = this.data.length; i < len; i++) {
+			min = Math.min(min, this.data[i]);
+			max = Math.max(max, this.data[i]);
 		}
 		return { min: min, max: max };
-	};
-
-
-	return me;
-};
-
-module.exports = Sample;
+	}
+}

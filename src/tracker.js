@@ -1,29 +1,28 @@
-const WAAClock = require('waaclock');
-const Note = require('./models/note');
-const Instrument = require('./models/instrument');
-const FileDetector = require('./fileformats/detect');
-const { getUrlParameter } = require('./lib/util');
-const { BinaryStream, loadFile } = require('./filesystem');
-const EventBus = require('./eventBus');
-const Host = require('./host');
+import WAAClock from 'waaclock';
+import { Note } from './models/note';
+import { Instrument } from './models/instrument';
+import { FileDetector } from './fileformats/detect';
+import { getUrlParameter } from './lib/util';
+import { BinaryStream, loadFile } from './filesystem';
+import { bus as EventBus } from './eventBus';
 
-const { UI,
+import { UI,
 	EVENT,
 	PLAYTYPE,
 	NOTEPERIOD,
 	FTNOTEPERIOD,
 	NOTEOFF,
 	TRACKERMODE,
-	SETTINGS } = require('./enum');
+	SETTINGS } from './enum';
 
-var Tracker = function () {
+export const Tracker = function () {
 	var me = {
-		periodNoteTable : {},
-		periodFinetuneTable : {},
-		nameNoteTable : {},
-		noteNames : [],
-		FTNotes : [],
-		FTPeriods : [],
+		periodNoteTable: {},
+		periodFinetuneTable: {},
+		nameNoteTable: {},
+		noteNames: [],
+		FTNotes: [],
+		FTPeriods: [],
 	};
 
 	var clock;
@@ -117,7 +116,7 @@ var Tracker = function () {
 		} else {
 			if (index <= me.getMaxInstruments()) {
 				for (var i = song.instruments.length, max = index; i <= max; i++) {
-					me.setInstrument(i, Instrument());
+					me.setInstrument(i, new Instrument());
 				}
 
 				var instrumentContainer = [];
@@ -1725,7 +1724,7 @@ var Tracker = function () {
 				var row = [];
 				var channel;
 				for (channel = 0; channel < trackCount; channel++) {
-					row.push(Note());
+					row.push(new Note());
 				}
 				song.patterns[currentPattern].push(row);
 			}
@@ -1808,9 +1807,8 @@ var Tracker = function () {
 	};
 
 	me.load = function (url, skipHistory, next) {
-		url = url || "demomods/StardustMemories.mod";
-
-		if (url.indexOf("://") < 0 && url.indexOf("/") !== 0) url = Host.getBaseUrl() + url;
+		// TODO: remove this default
+		url = url || '';
 
 		if (UI) {
 			UI.setInfo("");
@@ -2038,7 +2036,7 @@ var Tracker = function () {
 		var max = count || song.instruments.length - 1;
 		instruments = [];
 		for (i = 1; i <= max; i++) {
-			me.setInstrument(i, Instrument());
+			me.setInstrument(i, new Instrument());
 			instrumentContainer.push({ label: i + " ", data: i });
 		}
 		song.instruments = instruments;
@@ -2086,7 +2084,7 @@ var Tracker = function () {
 
 
 	me.clearInstrument = function () {
-		instruments[currentInstrumentIndex] = Instrument();
+		instruments[currentInstrumentIndex] = new Instrument();
 		EventBus.trigger(EVENT.instrumentChange, currentInstrumentIndex);
 		EventBus.trigger(EVENT.instrumentNameChange, currentInstrumentIndex);
 	};
@@ -2101,7 +2099,7 @@ var Tracker = function () {
 			var row = [];
 			var channel;
 			for (channel = 0; channel < trackCount; channel++) {
-				row.push(Note());
+				row.push(new Note());
 			}
 			result.push(row);
 		}
@@ -2114,5 +2112,3 @@ var Tracker = function () {
 
 	return me;
 };
-
-module.exports = Tracker;

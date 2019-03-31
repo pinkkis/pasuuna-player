@@ -1,29 +1,25 @@
-var EventBus = (function () {
+class EventBus {
+	constructor() {
+		this.allEventHandlers = {};
+	}
 
-	var allEventHandlers = {};
-
-	var me = {};
-
-	me.on = function (event, listener) {
-		var eventHandlers = allEventHandlers[event];
+	on = function (event, listener) {
+		let eventHandlers = this.allEventHandlers[event];
 		if (!eventHandlers) {
 			eventHandlers = [];
-			allEventHandlers[event] = eventHandlers;
+			this.allEventHandlers[event] = eventHandlers;
 		}
 		eventHandlers.push(listener);
 	};
 
-	me.trigger = function (event, context) {
-		var eventHandlers = allEventHandlers[event];
+	trigger = function (event, context) {
+		let eventHandlers = this.allEventHandlers[event];
 		if (eventHandlers) {
-			var i, len = eventHandlers.length;
-			for (i = 0; i < len; i++) {
+			for (let i = 0; i < eventHandlers.length; i++) {
 				eventHandlers[i](context, event);
 			}
 		}
 	};
+};
 
-	return me;
-}());
-
-module.exports = EventBus;
+export const bus = new EventBus();

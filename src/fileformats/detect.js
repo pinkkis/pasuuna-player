@@ -1,8 +1,8 @@
-const SoundTracker = require('./soundtracker');
-const ProTracker = require('./protracker');
-const FastTracker = require('./fasttracker');
+import {SoundTracker} from './soundtracker';
+import {ProTracker} from './protracker';
+import {FastTracker} from './fasttracker';
 
-var FileDetector = function () {
+export const FileDetector = function () {
 	var me = {};
 
 	var fileType = {
@@ -112,5 +112,3 @@ var FileDetector = function () {
 
 	return me;
 }();
-
-module.exports = FileDetector;
