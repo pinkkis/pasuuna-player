@@ -11,7 +11,7 @@ import {
 	SETTINGS
 } from './enum';
 
-export const Audio = function (Tracker) {
+export const Audio = function (trckr) {
 	var me = {};
 
 	window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -85,7 +85,7 @@ export const Audio = function (Tracker) {
 
 		createAudioConnections(audioContext);
 
-		var numberOfTracks = Tracker.getTrackCount();
+		var numberOfTracks = trckr.getTrackCount();
 		filterChains = [];
 
 		function addFilterChain() {
@@ -170,7 +170,7 @@ export const Audio = function (Tracker) {
 			volume = 0; // note off
 		}
 
-		var instrument = Tracker.getInstrument(index);
+		var instrument = trckr.getInstrument(index);
 		var basePeriod = period;
 		var volumeEnvelope;
 		var panningEnvelope;
@@ -189,8 +189,8 @@ export const Audio = function (Tracker) {
 			var sampleRate;
 
 			// apply finetune
-			if (Tracker.inFTMode()) {
-				if (Tracker.useLinearFrequency) {
+			if (trckr.inFTMode()) {
+				if (trckr.useLinearFrequency) {
 					period -= instrument.getFineTune() / 2;
 				} else {
 					if (instrument.getFineTune()) {
@@ -418,9 +418,9 @@ export const Audio = function (Tracker) {
 	me.setStereoSeparation = function (value) {
 
 		var panAmount;
-		var numberOfTracks = Tracker.getTrackCount();
+		var numberOfTracks = trckr.getTrackCount();
 
-		if (Tracker.inFTMode()) {
+		if (trckr.inFTMode()) {
 			panAmount = 0;
 		} else {
 			value = value || currentStereoSeparation;
@@ -519,11 +519,11 @@ export const Audio = function (Tracker) {
 		target.buffer = source.buffer;
 
 		if (semitones) {
-			var rootNote = Tracker.periodNoteTable[root];
-			var rootIndex = Tracker.noteNames.indexOf(rootNote.name);
-			var targetName = Tracker.noteNames[rootIndex + semitones];
+			var rootNote = trckr.periodNoteTable[root];
+			var rootIndex = trckr.noteNames.indexOf(rootNote.name);
+			var targetName = trckr.noteNames[rootIndex + semitones];
 			if (targetName) {
-				var targetNote = Tracker.nameNoteTable[targetName];
+				var targetNote = trckr.nameNoteTable[targetName];
 				if (targetNote) {
 					target.playbackRate.value = (rootNote.period / targetNote.period) * source.playbackRate.value;
 				}
@@ -547,12 +547,12 @@ export const Audio = function (Tracker) {
 		}
 
 		if (semitones) {
-			var rootNote = Tracker.periodNoteTable[period];
+			var rootNote = trckr.periodNoteTable[period];
 			if (rootNote) {
-				var rootIndex = Tracker.noteNames.indexOf(rootNote.name);
-				var targetName = Tracker.noteNames[rootIndex + semitones];
+				var rootIndex = trckr.noteNames.indexOf(rootNote.name);
+				var targetName = trckr.noteNames[rootIndex + semitones];
 				if (targetName) {
-					var targetNote = Tracker.nameNoteTable[targetName];
+					var targetNote = trckr.nameNoteTable[targetName];
 					if (targetNote) {
 						result = targetNote.period;
 						if (finetune) { result = me.getFineTuneForPeriod(result, finetune) }
@@ -570,7 +570,7 @@ export const Audio = function (Tracker) {
 	me.getNearestSemiTone = function (period, instrumentIndex) {
 		var tuning = 8;
 		if (instrumentIndex) {
-			var instrument = Tracker.getInstrument(instrumentIndex);
+			var instrument = trckr.getInstrument(instrumentIndex);
 			if (instrument && instrument.sample.finetune) tuning = tuning + instrument.sample.finetune;
 		}
 
@@ -593,7 +593,7 @@ export const Audio = function (Tracker) {
 	// gives the finetuned period for a base period - protracker mode
 	me.getFineTuneForPeriod = function (period, finetune) {
 		var result = period;
-		var note = Tracker.periodNoteTable[period];
+		var note = trckr.periodNoteTable[period];
 		if (note && note.tune) {
 			var centerTune = 8;
 			var tune = 8 + finetune;
@@ -607,8 +607,8 @@ export const Audio = function (Tracker) {
 	me.getFineTuneForNote = function (note, finetune) {
 		if (note === NOTEOFF) return 1;
 
-		var ftNote1 = Tracker.FTNotes[note];
-		var ftNote2 = finetune > 0 ? Tracker.FTNotes[note + 1] : Tracker.FTNotes[note - 1];
+		var ftNote1 = trckr.FTNotes[note];
+		var ftNote2 = finetune > 0 ? trckr.FTNotes[note + 1] : trckr.FTNotes[note - 1];
 
 		if (ftNote1 && ftNote2) {
 			var delta = Math.abs(ftNote2.period - ftNote1.period) / 127;
@@ -623,7 +623,7 @@ export const Audio = function (Tracker) {
 	// gives the non-finetuned baseperiod for a finetuned period
 	me.getFineTuneBasePeriod = function (period, finetune) {
 		var result = period;
-		var table = Tracker.periodFinetuneTable[finetune];
+		var table = trckr.periodFinetuneTable[finetune];
 		if (table) {
 			result = table[period];
 		}
@@ -631,8 +631,8 @@ export const Audio = function (Tracker) {
 	};
 
 	me.getSampleRateForPeriod = function (period) {
-		if (Tracker.inFTMode()) {
-			if (Tracker.useLinearFrequency) return (8363 * Math.pow(2, ((4608 - period) / 768)));
+		if (trckr.inFTMode()) {
+			if (trckr.useLinearFrequency) return (8363 * Math.pow(2, ((4608 - period) / 768)));
 			return PC_FREQUENCY_HALF / period;
 		}
 		return AMIGA_PALFREQUENCY_HALF / period;

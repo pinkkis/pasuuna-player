@@ -5,16 +5,16 @@ import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
 import { processEnvelope, checkEnvelope } from '../lib/util';
 import { bus as EventBus } from '../eventBus';
 
-// TODO: has Tracker global ref
-
 export class FastTracker {
-	constructor() {}
+	constructor(tracker) {
+		this.tracker = tracker;
+	}
 
 	// see ftp://ftp.modland.com/pub/documents/format_documentation/FastTracker%202%20v2.04%20(.xm).html
 	load(file, name) {
 		console.log('loading FastTracker');
-		Tracker.setTrackerMode(TRACKERMODE.FASTTRACKER);
-		Tracker.clearInstruments(1);
+		this.tracker.setTrackerMode(TRACKERMODE.FASTTRACKER);
+		this.tracker.clearInstruments(1);
 
 		let mod = {};
 		let song = {
@@ -39,9 +39,9 @@ export class FastTracker {
 		mod.numberOfInstruments = file.readWord();
 		mod.flags = file.readWord();
 		if (mod.flags % 2 === 1) {
-			Tracker.useLinearFrequency = true;
+			this.tracker.useLinearFrequency = true;
 		} else {
-			Tracker.useLinearFrequency = false;
+			this.tracker.useLinearFrequency = false;
 		}
 
 		mod.defaultTempo = file.readWord();
@@ -81,7 +81,7 @@ export class FastTracker {
 				let row = [];
 				let channel;
 				for (channel = 0; channel < mod.numberOfChannels; channel++) {
-					let note = new Note();
+					let note = new Note(this.tracker);
 					let v = file.readUbyte();
 
 					if (v & 128) {
@@ -112,7 +112,7 @@ export class FastTracker {
 		const instrumentContainer = [];
 
 		for (let i = 1; i <= mod.numberOfInstruments; ++i) {
-			const instrument = new Instrument();
+			const instrument = new Instrument(this.tracker);
 
 			try {
 				instrument.filePosition = file.index;
@@ -263,16 +263,16 @@ export class FastTracker {
 
 			instrument.setSampleIndex(0);
 
-			Tracker.setInstrument(i, instrument);
+			this.tracker.setInstrument(i, instrument);
 			instrumentContainer.push({ label: i + ' ' + instrument.name, data: i });
 
 		}
 
 		EventBus.trigger(EVENT.instrumentListChange, instrumentContainer);
-		song.instruments = Tracker.getInstruments();
+		song.instruments = this.tracker.getInstruments();
 
-		Tracker.setBPM(mod.defaultBPM);
-		Tracker.setAmigaSpeed(mod.defaultTempo);
+		this.tracker.setBPM(mod.defaultBPM);
+		this.tracker.setAmigaSpeed(mod.defaultTempo);
 
 		this.validate(song);
 

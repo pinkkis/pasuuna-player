@@ -3,7 +3,8 @@ import {bus as EventBus} from '../eventBus';
 import {EVENT} from '../enum';
 
 export class Instrument {
-	constructor() {
+	constructor(tracker) {
+		this.tracker = tracker;
 		this.type = 'sample';
 		this.name = '';
 		this.instrumentIndex = 0;
@@ -18,8 +19,8 @@ export class Instrument {
 		this.sampleNumberForNotes = [];
 	}
 
-	static processEnvelop(envelope, audioNode, time) {
-		var tickTime = Tracker.getProperties().tickTime;
+	processEnvelop(envelope, audioNode, time) {
+		var tickTime = this.tracker.getProperties().tickTime;
 		var maxPoint = envelope.sustain ? envelope.sustainPoint + 1 : envelope.count;
 
 		// some XM files seem to have loop points outside the range.
@@ -64,10 +65,10 @@ export class Instrument {
 	}
 
 	play(noteIndex, notePeriod, volume, track, trackEffects, time) {
-		if (Tracker.inFTMode()) {
+		if (this.tracker.inFTMode()) {
 			notePeriod = this.getPeriodForNote(noteIndex);
 		}
-		return Audio.playSample(this.instrumentIndex, notePeriod, volume, track, trackEffects, time, noteIndex);
+		return this.tracker.audio.playSample(this.instrumentIndex, notePeriod, volume, track, trackEffects, time, noteIndex);
 	};
 
 	noteOn(time) {
@@ -76,16 +77,16 @@ export class Instrument {
 		var scheduled = {};
 
 		if (this.volumeEnvelope.enabled) {
-			volumeEnvelope = Audio.context.createGain();
+			volumeEnvelope = this.tracker.audio.context.createGain();
 			var envelope = this.volumeEnvelope;
-			var scheduledTime = Instrument.processEnvelop(envelope, volumeEnvelope, time);
+			var scheduledTime = this.processEnvelop(envelope, volumeEnvelope, time);
 			if (scheduledTime) scheduled.volume = (time + scheduledTime);
 		}
 
-		if (this.panningEnvelope.enabled && Audio.usePanning) {
-			panningEnvelope = Audio.context.createStereoPanner();
+		if (this.panningEnvelope.enabled && this.tracker.audio.usePanning) {
+			panningEnvelope = this.tracker.audio.context.createStereoPanner();
 			envelope = this.panningEnvelope;
-			scheduledTime = Instrument.processEnvelop(envelope, panningEnvelope, time);
+			scheduledTime = this.processEnvelop(envelope, panningEnvelope, time);
 			if (scheduledTime) scheduled.panning = (time + scheduledTime);
 		}
 
@@ -112,8 +113,8 @@ export class Instrument {
 		}
 
 
-		if (Tracker.inFTMode()) {
-			var tickTime = Tracker.getProperties().tickTime;
+		if (this.tracker.inFTMode()) {
+			var tickTime = this.tracker.getProperties().tickTime;
 
 			if (this.volumeEnvelope.enabled) {
 
@@ -138,7 +139,7 @@ export class Instrument {
 				noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + 0.1)
 			}
 
-			if (this.panningEnvelope.enabled && Audio.usePanning) {
+			if (this.panningEnvelope.enabled && this.tracker.audio.usePanning) {
 				timeOffset = 0;
 				startPoint = this.panningEnvelope.points[this.panningEnvelope.sustainPoint];
 				if (startPoint) timeOffset = startPoint[0] * tickTime;
@@ -166,7 +167,7 @@ export class Instrument {
 		// note - this is not 100% accurate when the ticktime would change during the scheduled ahead time
 
 		scheduledTime = scheduledTime || 0;
-		var tickTime = Tracker.getProperties().tickTime;
+		var tickTime = this.tracker.getProperties().tickTime;
 
 		if (audioNode.gain) {
 			// volume
@@ -205,17 +206,17 @@ export class Instrument {
 		// this is only used for keyboard notes as in the player the main playback timer is used for this
 		var scheduledTime = 0;
 		note.scheduled.ticks = note.scheduled.ticks || 0;
-		var tickTime = Tracker.getProperties().tickTime;
+		var tickTime = this.tracker.getProperties().tickTime;
 
 		var freq = -this.vibrato.rate / 40;
 		var amp = this.vibrato.depth / 8;
-		if (Tracker.useLinearFrequency) amp *= 4;
+		if (this.tracker.useLinearFrequency) amp *= 4;
 
 		var currentPeriod, vibratoFunction, time, tick;
 		if (note.source) {
 			currentPeriod = note.startPeriod;
-			vibratoFunction = note.scheduled.vibratoFunction || Audio.waveFormFunction.sine;
-			time = note.scheduled.vibrato || Audio.context.currentTime;
+			vibratoFunction = note.scheduled.vibratoFunction || this.tracker.audio.waveFormFunction.sine;
+			time = note.scheduled.vibrato || this.tracker.audio.context.currentTime;
 			tick = 0;
 		}
 
@@ -230,7 +231,7 @@ export class Instrument {
 				}
 
 				var targetPeriod = vibratoFunction(currentPeriod, note.scheduled.ticks, freq, amp * sweepAmp);
-				Tracker.setPeriodAtTime(note, targetPeriod, time + (tick * tickTime));
+				this.tracker.setPeriodAtTime(note, targetPeriod, time + (tick * tickTime));
 				tick++;
 			}
 			note.scheduled.ticks++;
@@ -241,11 +242,11 @@ export class Instrument {
 
 	getAutoVibratoFunction() {
 		switch (this.vibrato.type) {
-			case 1: return Audio.waveFormFunction.square;
-			case 2: return Audio.waveFormFunction.saw;
-			case 3: return Audio.waveFormFunction.sawInverse;
+			case 1: return this.tracker.audio.waveFormFunction.square;
+			case 2: return this.tracker.audio.waveFormFunction.saw;
+			case 3: return this.tracker.audio.waveFormFunction.sawInverse;
 		}
-		return Audio.waveFormFunction.sine;
+		return this.tracker.audio.waveFormFunction.sine;
 	};
 
 	resetVolume(time, noteInfo) {
@@ -256,7 +257,7 @@ export class Instrument {
 
 		if (noteInfo.volumeEnvelope) {
 			noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
-			var tickTime = Tracker.getProperties().tickTime;
+			var tickTime = this.tracker.getProperties().tickTime;
 
 			var maxPoint = this.volumeEnvelope.sustain ? this.volumeEnvelope.sustainPoint + 1 : this.volumeEnvelope.count;
 			noteInfo.volumeEnvelope.gain.setValueAtTime(this.volumeEnvelope.points[0][1] / 64, time);
@@ -268,11 +269,11 @@ export class Instrument {
 	};
 
 	getFineTune() {
-		return Tracker.inFTMode() ? this.sample.finetuneX : this.sample.finetune;
+		return this.tracker.inFTMode() ? this.sample.finetuneX : this.sample.finetune;
 	};
 
 	setFineTune(finetune) {
-		if (Tracker.inFTMode()) {
+		if (this.tracker.inFTMode()) {
 			this.sample.finetuneX = finetune;
 			this.sample.finetune = finetune >> 4;
 		} else {
@@ -286,13 +287,13 @@ export class Instrument {
 	getPeriodForNote(noteIndex, withFineTune) {
 		var result = 0;
 
-		if (Tracker.useLinearFrequency) {
+		if (this.tracker.useLinearFrequency) {
 			result = 7680 - (noteIndex - 1) * 64;
 			if (withFineTune) result -= this.getFineTune() / 2;
 		} else {
-			result = Tracker.FTNotes[noteIndex].period;
+			result = this.tracker.FTNotes[noteIndex].period;
 			if (withFineTune && this.getFineTune()) {
-				result = Audio.getFineTuneForNote(noteIndex, this.getFineTune());
+				result = this.tracker.audio.getFineTuneForNote(noteIndex, this.getFineTune());
 			}
 		}
 

@@ -1,5 +1,6 @@
 export class Note {
-	constructor() {
+	constructor(tracker) {
+		this.tracker = tracker;
 		this.period = 0;
 		this.index = 0;
 		this.effect = 0;
@@ -10,12 +11,12 @@ export class Note {
 
 	setPeriod(period) {
 		this.period = period;
-		this.index = Tracker.FTPeriods[period] || 0;
+		this.index = this.tracker.FTPeriods[period] || 0;
 	};
 
 	setIndex(index) {
 		this.index = index;
-		var ftNote = Tracker.FTNotes[index];
+		var ftNote = this.tracker.FTNotes[index];
 		if (ftNote) {
 			this.period = ftNote.modPeriod || ftNote.period;
 			if (this.period === 1) this.period = 0;

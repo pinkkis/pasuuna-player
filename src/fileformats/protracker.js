@@ -6,12 +6,14 @@ import { bus } from '../eventBus';
 // TODO: tracker global ref
 
 export class ProTracker {
-	constructor() {}
+	constructor(tracker) {
+		this.tracker = tracker;
+	}
 
 	load(file) {
-		Tracker.setTrackerMode(TRACKERMODE.PROTRACKER);
-		Tracker.useLinearFrequency = false;
-		Tracker.clearInstruments(31);
+		this.tracker.setTrackerMode(TRACKERMODE.PROTRACKER);
+		this.tracker.useLinearFrequency = false;
+		this.tracker.clearInstruments(31);
 
 		const patternLength = 64;
 		const instrumentCount = 31;
@@ -46,7 +48,7 @@ export class ProTracker {
 		for (let i = 1; i <= instrumentCount; ++i) {
 			const instrumentName = file.readString(22);
 			const sampleLength = file.readWord(); // in words
-			const instrument = new Instrument();
+			const instrument = new Instrument(this.tracker);
 
 			instrument.name = instrumentName;
 			instrument.sample.length = instrument.sample.realLen = sampleLength << 1;
@@ -66,10 +68,10 @@ export class ProTracker {
 			sampleDataOffset += instrument.sample.length;
 			instrument.setSampleIndex(0);
 
-			Tracker.setInstrument(i, instrument);
+			this.tracker.setInstrument(i, instrument);
 		}
 
-		song.instruments = Tracker.getInstruments();
+		song.instruments = this.tracker.getInstruments();
 
 		file.goto(950);
 		song.length = file.readUbyte();
@@ -93,7 +95,7 @@ export class ProTracker {
 			for (let step = 0; step < patternLength; step++) {
 				const row = [];
 				for (let channel = 0; channel < channelCount; channel++) {
-					const note = new Note();
+					const note = new Note(this.tracker);
 					const trackStepInfo = file.readUint();
 
 					note.setPeriod((trackStepInfo >> 16) & 0x0fff);
@@ -106,8 +108,8 @@ export class ProTracker {
 
 				// fill with empty data for other channels
 				// TODO: not needed anymore ?
-				// for (let channel = channelCount; channel < Tracker.getTrackCount(); channel++) {
-				// 	row.push(new Note())
+				// for (let channel = channelCount; channel < this.tracker.getTrackCount(); channel++) {
+				// 	row.push(new Note(this.tracker))
 				// }
 
 				patternData.push(row);
@@ -119,7 +121,7 @@ export class ProTracker {
 		const instrumentContainer = [];
 
 		for (let i = 1; i <= instrumentCount; i++) {
-			const instrument = Tracker.getInstrument(i);
+			const instrument = this.tracker.getInstrument(i);
 			if (instrument) {
 				console.log('Reading sample from 0x' + file.index + ' with length of ' + instrument.sample.length + ' bytes and repeat length of ' + instrument.sample.loop.length);
 				const sampleEnd = instrument.sample.length;

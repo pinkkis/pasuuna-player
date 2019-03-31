@@ -218,7 +218,7 @@
 
 					// setup progress bar to seek into the song
 					progressBar.oninput = function () {
-						wasPlaying = wasPlaying || BassoonTracker.isPlaying();
+						wasPlaying = wasPlaying || BassoonTracker.isPlaying;
 						stopPlay();
 					};
 					progressBar.onchange = function () {
@@ -242,7 +242,7 @@
 					requestAnimationFrame(function loop() {
 						if (startTime) {
 
-							if (BassoonTracker.isPlaying()) {
+							if (BassoonTracker.isPlaying) {
 								var time = new Date().getTime() - startTime;
 								var state = BassoonTracker.getStateAtTime(time);
 								if (state) {
@@ -262,7 +262,7 @@
 
 				function togglePlay() {
 					BassoonTracker.togglePlay();
-					if (BassoonTracker.isPlaying()) {
+					if (BassoonTracker.isPlaying) {
 						startTime = new Date().getTime();
 						playButton.innerHTML = "Pause";
 					} else {
