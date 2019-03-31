@@ -1,4 +1,4 @@
-import { bus as EventBus } from './eventBus';
+import { bus } from './eventBus';
 import { FilterChain } from './audio/filterChain';
 
 import {
@@ -11,201 +11,216 @@ import {
 	SETTINGS
 } from './enum';
 
-export const Audio = function (trckr) {
-	var me = {};
+export class Audio {
+	constructor(tracker) {
+		this.tracker = tracker;
 
-	window.AudioContext = window.AudioContext || window.webkitAudioContext;
-	window.OfflineAudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+		this.audioContext = new AudioContext();
+		this.offlineContext = null;
+		this.context = this.audioContext;
 
-	var context;
-	var masterVolume;
-	var cutOffVolume;
-	var lowPassfilter;
-	var i;
-	var filterChains = [];
-	var isRecording;
-	var mediaRecorder;
-	var recordingChunks = [];
-	var offlineContext;
-	var currentStereoSeparation = STEREOSEPARATION.BALANCED;
-	var lastMasterVolume = 0;
-	var usePanning;
-	var hasUI;
-	var scheduledNotes = [[], [], []];
-	var scheduledNotesBucket = 0;
-	var prevSampleRate = 4143.569;
-
-	var filters = {
-		volume: true,
-		panning: true,
-		high: true,
-		mid: true,
-		low: true,
-		lowPass: true,
-		reverb: true,
-		distortion: false
-	};
-
-	var isRendering = false;
-
-	function createAudioConnections(audioContext) {
-
-		cutOffVolume = audioContext.createGain();
-		cutOffVolume.gain.setValueAtTime(1, 0);
-		cutOffVolume.connect(audioContext.destination);
-
-		masterVolume = audioContext.createGain();
-		masterVolume.connect(cutOffVolume);
-		me.setMasterVolume(1);
-
-		lowPassfilter = audioContext.createBiquadFilter();
-		lowPassfilter.type = "lowpass";
-		lowPassfilter.frequency.setValueAtTime(20000, 0);
-
-		lowPassfilter.connect(masterVolume);
-
-		me.masterVolume = masterVolume;
-		me.cutOffVolume = cutOffVolume;
-		me.lowPassfilter = lowPassfilter;
+		this.masterVolume = null;
+		this.cutOffVolume = null;
+		this.lowPassfilter = null;
+		this.filterChains = [];
+		this.isRecording = false;
+		this.mediaRecorder = null;
+		this.recordingChunks = [];
+		this.currentStereoSeparation = STEREOSEPARATION.BALANCED;
+		this.lastMasterVolume = 0;
+		this.usePanning = false;
+		this.scheduledNotes = [[], [], []];
+		this.scheduledNotesBucket = 0;
+		this.prevSampleRate = 4143.569;
+		this.isRendering = false;
+		this.filters = {
+			volume: true,
+			panning: true,
+			high: true,
+			mid: true,
+			low: true,
+			lowPass: true,
+			reverb: true,
+			distortion: false
+		};
+		this.waveFormFunction = {
+			sine: (period, progress, freq, amp) => {
+				return period + (Math.sin(progress * freq * 0.8) * amp * 1.7);
+			},
+			saw: (period, progress, freq, amp) => {
+				let value = 1 - Math.abs(((progress * freq / 7) % 1)); // from 1 to 0
+				value = (value * 2) - 1; // from -1 to 1
+				value = value * amp * -2;
+				return period + value;
+			},
+			square: (period, progress, freq, amp) => {
+				let value = Math.sin(progress * freq) <= 0 ? -1 : 1;
+				value = value * amp * 2;
+				return period + value;
+			},
+			sawInverse: (period, progress, freq, amp) => {
+				let value = Math.abs((progress * freq / 7) % 1); // from 0 to 1
+				value = (value * 2) - 1; // from -1 to 1
+				value = value * amp * -2;
+				return period + value;
+			}
+		};
 	}
 
-	if (AudioContext) {
-		context = new AudioContext();
+	createAudioConnections(actx) {
+		this.cutOffVolume = actx.createGain();
+		this.cutOffVolume.gain.setValueAtTime(1, 0);
+		this.cutOffVolume.connect(actx.destination);
+
+		this.masterVolume = actx.createGain();
+		this.masterVolume.connect(this.cutOffVolume);
+		this.setMasterVolume(1);
+
+		this.lowPassfilter = actx.createBiquadFilter();
+		this.lowPassfilter.type = 'lowpass';
+		this.lowPassfilter.frequency.setValueAtTime(20000, 0);
+
+		this.lowPassfilter.connect(this.masterVolume);
 	}
 
-	me.init = function (audioContext) {
-		audioContext = audioContext || context;
-		if (!audioContext) return;
+	addFilterChain() {
+		const filterChain = new FilterChain(this, this.filters);
+		filterChain.output.connect(this.lowPassfilter);
+		this.filterChains.push(filterChain);
+	}
 
-		usePanning = !!me.context.createStereoPanner;
-		if (!usePanning) {
-			console.warn("Warning: Your browser does not support StereoPanners ... all mods will be played in mono!")
-		}
-		hasUI = typeof Editor !== "undefined";
-
-		createAudioConnections(audioContext);
-
-		var numberOfTracks = trckr.getTrackCount();
-		filterChains = [];
-
-		function addFilterChain() {
-			var filterChain = new FilterChain(me, filters);
-			filterChain.output.connect(lowPassfilter);
-			filterChains.push(filterChain);
+	init(actx) {
+		actx = actx || this.audioContext;
+		if (!actx) {
+			console.warn('No audioContext');
+			return;
+		} else {
+			this.context = actx;
 		}
 
-		for (i = 0; i < numberOfTracks; i++)addFilterChain();
+		this.usePanning = !!this.context.createStereoPanner;
+		if (!this.usePanning) {
+			console.warn('Browser does not support StereoPanners, mono only');
+		}
 
-		me.filterChains = filterChains;
-		me.usePanning = usePanning;
+		this.createAudioConnections(actx);
 
-		if (!isRendering) {
-			EventBus.on(EVENT.trackStateChange, function (state) {
-				if (typeof state.track != "undefined" && filterChains[state.track]) {
-					filterChains[state.track].volumeValue(state.mute ? 0 : 70);
+		const numberOfTracks = this.tracker.getTrackCount();
+		this.filterChains = [];
+
+		for (let i = 0; i < numberOfTracks; i++) {
+			this.addFilterChain();
+		}
+
+		if (!this.isRendering) {
+			bus.on(EVENT.trackStateChange, (state) => {
+				if (typeof state.track !== 'undefined' && this.filterChains[state.track]) {
+					this.filterChains[state.track].volumeValue(state.mute ? 0 : 70);
 				}
 			});
 
+			bus.on(EVENT.trackCountChange, (trackCount) => {
+				for (let i = this.filterChains.length; i < trackCount; i++) {
+					this.addFilterChain();
+				}
 
-			EventBus.on(EVENT.trackCountChange, function (trackCount) {
-				for (i = filterChains.length; i < trackCount; i++)addFilterChain();
-				EventBus.trigger(EVENT.filterChainCountChange, trackCount);
-				me.setStereoSeparation(currentStereoSeparation);
+				bus.trigger(EVENT.filterChainCountChange, trackCount);
+				this.setStereoSeparation(this.currentStereoSeparation);
 			});
 
-			EventBus.on(EVENT.trackerModeChanged, function (mode) {
-				me.setStereoSeparation();
+			bus.on(EVENT.trackerModeChanged, (mode) => {
+				this.setStereoSeparation(/*mode*/);
 			});
 		}
 	};
 
-
-	me.enable = function () {
-		cutOffVolume.gain.setValueAtTime(1, 0);
-		me.cutOff = false;
+	enable() {
+		this.cutOffVolume.gain.setValueAtTime(1, 0);
+		this.cutOff = false;
 	};
 
-	me.disable = function () {
-		cutOffVolume.gain.setValueAtTime(0, 0);
-		me.cutOff = true;
+	disable() {
+		this.cutOffVolume.gain.setValueAtTime(0, 0);
+		this.cutOff = true;
 
-		var totalNotes = 0;
-		scheduledNotes.forEach(function (bucket, index) {
+		let totalNotes = 0;
+		this.scheduledNotes.forEach((bucket, index) => {
 			totalNotes += bucket.length;
 			bucket.forEach(function (volume) {
 				volume.gain.cancelScheduledValues(0);
 				volume.gain.setValueAtTime(0, 0);
 			});
-			scheduledNotes[index] = [];
+			this.scheduledNotes[index] = [];
 		});
 
-		if (totalNotes) console.log(totalNotes + " cleared");
+		if (totalNotes) console.log(totalNotes + ' cleared');
 	};
 
-	me.checkState = function () {
-		if (context) {
-			if (context.state === "suspended" && context.resume) {
-				console.warn("Audio context is suspended - trying to resume");
-				context.resume();
+	checkState() {
+		if (this.context) {
+			if (this.context.state === 'suspended' && this.context.resume) {
+				console.info('Audio context is suspended - trying to resume');
+				this.context.resume();
 			}
 		}
 	};
 
 
-	me.playSample = function (index, period, volume, track, effects, time, noteIndex) {
-
-		var audioContext;
-		if (isRendering) {
-			audioContext = offlineContext;
+	playSample(index, period, volume, track, effects, time, noteIndex) {
+		let audioContext;
+		if (this.isRendering) {
+			audioContext = this.offlineContext;
 		} else {
-			audioContext = context;
-			me.enable();
+			audioContext = this.audioContext;
+			this.enable();
 		}
 
 		period = period || 428; // C-3
-		if (typeof track === "undefined") track = (hasUI ? Editor.getCurrentTrack() : 0);
-		time = time || context.currentTime;
+		if (typeof track === 'undefined') {
+			track = 0;
+		}
+
+		time = time || audioContext.currentTime;
 
 		if (noteIndex === NOTEOFF) {
 			volume = 0; // note off
 		}
 
-		var instrument = trckr.getInstrument(index);
-		var basePeriod = period;
-		var volumeEnvelope;
-		var panningEnvelope;
-		var scheduled;
-		var pan = 0;
+		const instrument = this.tracker.getInstrument(index);
+		const basePeriod = period;
+		let volumeEnvelope;
+		let panningEnvelope;
+		let scheduled;
+		let pan = 0;
 
 		if (instrument) {
-			var sampleBuffer;
-			var offset = 0;
-			var sampleLength = 0;
+			let sampleBuffer;
+			let offset = 0;
+			let sampleLength = 0;
+			let sampleRate;
+			let initialPlaybackRate = 1;
+			let panning = null;
 
-			volume = typeof volume === "undefined" ? (100 * instrument.sample.volume / 64) : volume;
-
+			volume = typeof volume === 'undefined' ? (100 * instrument.sample.volume / 64) : volume;
 			pan = (instrument.sample.panning || 0) / 128;
 
-			var sampleRate;
-
 			// apply finetune
-			if (trckr.inFTMode()) {
-				if (trckr.useLinearFrequency) {
+			if (this.tracker.inFTMode()) {
+				if (this.tracker.useLinearFrequency) {
 					period -= instrument.getFineTune() / 2;
 				} else {
 					if (instrument.getFineTune()) {
-						period = me.getFineTuneForNote(noteIndex, instrument.getFineTune());
+						period = this.getFineTuneForNote(noteIndex, instrument.getFineTune());
 					}
 				}
 			} else {
 				// protracker frequency
 				if (instrument.getFineTune()) {
-					period = me.getFineTuneForPeriod(period, instrument.getFineTune());
+					period = this.getFineTuneForPeriod(period, instrument.getFineTune());
 				}
 			}
 
-			sampleRate = me.getSampleRateForPeriod(period);
-			var initialPlaybackRate = 1;
+			sampleRate = this.getSampleRateForPeriod(period);
 
 			if (instrument.sample.data.length) {
 				sampleLength = instrument.sample.data.length;
@@ -221,23 +236,22 @@ export const Audio = function (trckr) {
 				sampleBuffer = audioContext.createBuffer(1, 1, audioContext.sampleRate);
 				offset = 0;
 			}
-			var buffering = sampleBuffer.getChannelData(0);
-			for (i = 0; i < sampleLength; i++) {
+
+			const buffering = sampleBuffer.getChannelData(0);
+			for (let i = 0; i < sampleLength; i++) {
 				buffering[i] = instrument.sample.data[i];
 			}
 
-			prevSampleRate = sampleRate;
-			var source = audioContext.createBufferSource();
+			this.prevSampleRate = sampleRate;
+			const source = audioContext.createBufferSource();
 			source.buffer = sampleBuffer;
 
-			var volumeGain = audioContext.createGain();
+			const volumeGain = audioContext.createGain();
 			volumeGain.gain.value = volume / 100;
 			volumeGain.gain.setValueAtTime(volume / 100, time);
 
 			if (instrument.sample.loop.enabled && instrument.sample.loop.length > 2) {
-
 				if (!SETTINGS.unrollLoops) {
-
 					source.loop = true;
 					// in seconds ...
 					source.loopStart = instrument.sample.loop.start / audioContext.sampleRate;
@@ -247,9 +261,8 @@ export const Audio = function (trckr) {
 			}
 
 			if (instrument.volumeEnvelope.enabled || instrument.panningEnvelope.enabled || instrument.hasVibrato()) {
-
-				var envelopes = instrument.noteOn(time);
-				var target = source;
+				const envelopes = instrument.noteOn(time);
+				let target = source;
 
 				if (envelopes.volume) {
 					volumeEnvelope = envelopes.volume;
@@ -271,24 +284,23 @@ export const Audio = function (trckr) {
 				source.connect(volumeGain);
 			}
 
-			var volumeFadeOut = me.context.createGain();
+			const volumeFadeOut = this.context.createGain();
 			volumeFadeOut.gain.setValueAtTime(0, time);
 			volumeFadeOut.gain.linearRampToValueAtTime(1, time + 0.01);
 			volumeGain.connect(volumeFadeOut);
 
-			if (usePanning) {
-				var panning = me.context.createStereoPanner();
+			if (this.usePanning) {
+				panning = this.context.createStereoPanner();
 				panning.pan.setValueAtTime(pan, time);
 				volumeFadeOut.connect(panning);
-				panning.connect(filterChains[track].input);
+				panning.connect(this.filterChains[track].input);
 			} else {
-				volumeFadeOut.connect(filterChains[track].input);
+				volumeFadeOut.connect(this.filterChains[track].input);
 			}
 
-
 			source.playbackRate.value = initialPlaybackRate;
-			var sourceDelayTime = 0;
-			var playTime = time + sourceDelayTime;
+			let sourceDelayTime = 0;
+			let playTime = time + sourceDelayTime;
 
 			source.start(playTime, offset);
 
@@ -313,9 +325,11 @@ export const Audio = function (trckr) {
 				scheduled: scheduled
 			};
 
-			scheduledNotes[scheduledNotesBucket].push(volumeGain);
+			this.scheduledNotes[this.scheduledNotesBucket].push(volumeGain);
 
-			if (!isRendering) EventBus.trigger(EVENT.samplePlay, result);
+			if (!this.isRendering) {
+				bus.trigger(EVENT.samplePlay, result);
+			}
 
 			return result;
 		}
@@ -323,108 +337,102 @@ export const Audio = function (trckr) {
 		return {};
 	};
 
-	me.playSilence = function () {
+	playSilence() {
 		// used to activate Audio engine on first touch in IOS and Android devices
-		if (context) {
-			var source = context.createBufferSource();
-			source.connect(masterVolume);
+		if (this.context) {
+			const source = context.createBufferSource();
+			source.connect(this.masterVolume);
 			source.start();
 		}
 	};
 
-	me.playRaw = function (data, sampleRate) {
+	playRaw(data, sampleRate) {
 		// used to loose snippets of samples (ranges etc)
-		if (context && data && data.length) {
-			var sampleBuffer;
-			sampleBuffer = context.createBuffer(1, data.length, context.sampleRate);
-			var initialPlaybackRate = sampleRate / audioContext.sampleRate;
-			var source = context.createBufferSource();
+		if (this.context && data && data.length) {
+			const sampleBuffer = this.context.createBuffer(1, data.length, this.context.sampleRate);
+			const initialPlaybackRate = sampleRate / audioContext.sampleRate;
+			const source = context.createBufferSource();
 			source.buffer = sampleBuffer;
 			source.loop = true;
 			source.playbackRate.value = initialPlaybackRate;
-			source.connect(masterVolume);
+			source.connect(this.masterVolume);
 			source.start();
 		}
 	};
 
+	// startRecording() {
+	// 	if (!isRecording) {
 
-	me.isRecording = function () {
-		return isRecording;
+	// 		if (context && context.createMediaStreamDestination) {
+	// 			var dest = context.createMediaStreamDestination();
+	// 			mediaRecorder = new MediaRecorder(dest.stream);
+
+	// 			iaRecorder.ondataavailable(evt) {
+	// 				// push each chunk (blobs) in an array
+	// 				recordingChunks.push(evt.data);
+	// 			};
+
+	// 			iaRecorder.onstop(evt) {
+	// 				var blob = new Blob(recordingChunks, { 'type': 'audio/ogg; codecs=opus' });
+	// 				saveAs(blob, 'recording.opus');
+	// 				//document.querySelector('audio').src = URL.createObjectURL(blob);
+	// 			};
+
+
+	// 			masterVolume.connect(dest);
+	// 			mediaRecorder.start();
+	// 			isRecording = true;
+
+	// 		} else {
+	// 			console.error('recording is not supported on this browser');
+	// 		}
+
+	// 	}
+	// };
+
+	// stopRecording() {
+	// 	if (isRecording) {
+	// 		isRecording = false;
+	// 		mediaRecorder.stop();
+	// 	}
+	// };
+
+	startRendering(length) {
+		this.isRendering = true;
+
+		console.log('startRendering ' + length);
+		this.offlineContext = new OfflineAudioContext(2, 44100 * length, 44100);
+		this.context = this.offlineContext;
+		this.init(this.offlineContext);
 	};
 
-	me.startRecording = function () {
-		if (!isRecording) {
+	stopRendering(next) {
+		this.isRendering = false;
 
-			if (context && context.createMediaStreamDestination) {
-				var dest = context.createMediaStreamDestination();
-				mediaRecorder = new MediaRecorder(dest.stream);
-
-				mediaRecorder.ondataavailable = function (evt) {
-					// push each chunk (blobs) in an array
-					recordingChunks.push(evt.data);
-				};
-
-				mediaRecorder.onstop = function (evt) {
-					var blob = new Blob(recordingChunks, { 'type': 'audio/ogg; codecs=opus' });
-					saveAs(blob, "recording.opus");
-					//document.querySelector("audio").src = URL.createObjectURL(blob);
-				};
-
-
-				masterVolume.connect(dest);
-				mediaRecorder.start();
-				isRecording = true;
-
-			} else {
-				console.error("recording is not supported on this browser");
-			}
-
-		}
-	};
-
-	me.stopRecording = function () {
-		if (isRecording) {
-			isRecording = false;
-			mediaRecorder.stop();
-		}
-	};
-
-	me.startRendering = function (length) {
-		isRendering = true;
-
-		console.log("startRendering " + length);
-		offlineContext = new OfflineAudioContext(2, 44100 * length, 44100);
-		me.context = offlineContext;
-		me.init(offlineContext);
-	};
-
-	me.stopRendering = function (next) {
-		isRendering = false;
-
-		offlineContext.startRendering().then(function (renderedBuffer) {
-			console.log('Rendering completed successfully');
-			if (next) next(renderedBuffer);
-		}).catch(function (err) {
-			console.log('Rendering failed: ' + err);
-			// Note: The promise should reject when startRendering is called a second time on an OfflineAudioContext
-		});
+		this.offlineContext.startRendering()
+			.then((renderedBuffer) => {
+				console.log('Rendering completed successfully');
+				if (next) next(renderedBuffer);
+			}).catch((err) => {
+				console.log('Rendering failed: ' + err);
+				// Note: The promise should reject when startRendering is called a second time on an OfflineAudioContext
+			});
 
 		// switch back to online Audio context;
-		me.context = context;
-		createAudioConnections(context);
-		me.init(context);
+		this.context = this.audioContext;
+		this.createAudioConnections(this.context);
+		this.init(this.context);
 	};
 
-	me.setStereoSeparation = function (value) {
+	setStereoSeparation(value) {
+		let panAmount;
+		const numberOfTracks = this.tracker.getTrackCount();
 
-		var panAmount;
-		var numberOfTracks = trckr.getTrackCount();
-
-		if (trckr.inFTMode()) {
+		if (this.tracker.inFTMode()) {
 			panAmount = 0;
 		} else {
-			value = value || currentStereoSeparation;
-			currentStereoSeparation = value;
+			value = value || this.currentStereoSeparation;
+			this.currentStereoSeparation = value;
 
 			switch (value) {
 				case STEREOSEPARATION.NONE:
@@ -445,33 +453,28 @@ export const Audio = function (trckr) {
 			}
 		}
 
-		for (i = 0; i < numberOfTracks; i++) {
-			var filter = filterChains[i];
+		for (let i = 0; i < numberOfTracks; i++) {
+			var filter = this.filterChains[i];
 			if (filter) filter.panningValue(i % 2 == 0 ? -panAmount : panAmount);
 		}
 	};
 
-	me.getPrevSampleRate = function () {
-		return prevSampleRate;
+	getPrevSampleRate() {
+		return this.prevSampleRate;
 	};
 
-	me.context = context;
-
-	function createPingPongDelay() {
-
+	createPingPongDelay() {
 		// example of delay effect.
-		//Taken from http://stackoverflow.com/questions/20644328/using-channelsplitter-and-mergesplitter-nodes-in-web-audio-api
+		// Taken from http://stackoverflow.com/questions/20644328/using-channelsplitter-and-mergesplitter-nodes-in-web-audio-api
 
-		var delayTime = 0.12;
-		var feedback = 0.3;
-
-		var merger = context.createChannelMerger(2);
-		var leftDelay = context.createDelay();
-		var rightDelay = context.createDelay();
-		var leftFeedback = context.createGain();
-		var rightFeedback = context.createGain();
-		var splitter = context.createChannelSplitter(2);
-
+		const delayTime = 0.12;
+		const feedback = 0.3;
+		const merger = this.context.createChannelMerger(2);
+		const leftDelay = this.context.createDelay();
+		const rightDelay = this.context.createDelay();
+		const leftFeedback = this.context.createGain();
+		const rightFeedback = this.context.createGain();
+		const splitter = this.context.createChannelSplitter(2);
 
 		splitter.connect(leftDelay, 0);
 		splitter.connect(rightDelay, 1);
@@ -493,37 +496,33 @@ export const Audio = function (trckr) {
 		leftFeedback.connect(merger, 0, 0);
 		rightFeedback.connect(merger, 0, 1);
 
-		// Now connect your input to "splitter", and connect "merger" to your output destination.
-
+		// Now connect your input to 'splitter', and connect 'merger' to your output destination.
 		return {
 			splitter: splitter,
 			merger: merger
 		}
 	}
 
-    /**
-
-     get a new AudioNode playing at x semitones from the root note
-     // used to create Chords and Arpeggio
-
-     @param {audioNode} source: audioBuffer of the root note
-     @param {Number} root: period of the root note
-     @param {Number} semitones: amount of semitones from the root note
-     @param {Number} finetune: finetune value of the base instrument
-     @return {audioNode} audioBuffer of the new note
-     */
-	function semiTonesFrom(source, root, semitones, finetune) {
-		var target;
-
-		target = context.createBufferSource();
+	/**
+	* get a new AudioNode playing at x semitones from the root note
+	* used to create Chords and Arpeggio
+	*
+	* @param {audioNode} source: audioBuffer of the root note
+	* @param {Number} root: period of the root note
+	* @param {Number} semitones: amount of semitones from the root note
+	* @param {Number} finetune: finetune value of the base instrument
+	* @return {audioNode} audioBuffer of the new note
+	**/
+	semiTonesFrom(source, root, semitones, finetune) {
+		const target = context.createBufferSource();
 		target.buffer = source.buffer;
 
 		if (semitones) {
-			var rootNote = trckr.periodNoteTable[root];
-			var rootIndex = trckr.noteNames.indexOf(rootNote.name);
-			var targetName = trckr.noteNames[rootIndex + semitones];
+			const rootNote = this.tracker.periodNoteTable[root];
+			const rootIndex = this.tracker.noteNames.indexOf(rootNote.name);
+			const targetName = this.tracker.noteNames[rootIndex + semitones];
 			if (targetName) {
-				var targetNote = trckr.nameNoteTable[targetName];
+				const targetNote = this.tracker.nameNoteTable[targetName];
 				if (targetNote) {
 					target.playbackRate.value = (rootNote.period / targetNote.period) * source.playbackRate.value;
 				}
@@ -533,53 +532,59 @@ export const Audio = function (trckr) {
 		}
 
 		return target;
-
 	}
 
-	me.getSemiToneFrom = function (period, semitones, finetune) {
-		var result = period;
+	getSemiToneFrom(period, semitones, finetune) {
+		let result = period;
+
 		if (finetune) {
-			period = me.getFineTuneBasePeriod(period, finetune);
+			period = this.getFineTuneBasePeriod(period, finetune);
 			if (!period) {
 				period = result;
-				console.error("ERROR: base period for finetuned " + finetune + " period " + period + " not found");
+				console.error('ERROR: base period for finetuned ' + finetune + ' period ' + period + ' not found');
 			}
 		}
 
 		if (semitones) {
-			var rootNote = trckr.periodNoteTable[period];
+			const rootNote = this.tracker.periodNoteTable[period];
 			if (rootNote) {
-				var rootIndex = trckr.noteNames.indexOf(rootNote.name);
-				var targetName = trckr.noteNames[rootIndex + semitones];
+				const rootIndex = this.tracker.noteNames.indexOf(rootNote.name);
+				const targetName = this.tracker.noteNames[rootIndex + semitones];
+
 				if (targetName) {
-					var targetNote = trckr.nameNoteTable[targetName];
+					const targetNote = this.tracker.nameNoteTable[targetName];
 					if (targetNote) {
+
 						result = targetNote.period;
-						if (finetune) { result = me.getFineTuneForPeriod(result, finetune) }
+						if (finetune) {
+							result = this.getFineTuneForPeriod(result, finetune);
+						}
 					}
 				}
 			} else {
-				console.error("ERROR: note for period " + period + " not found");
+				console.error('ERROR: note for period ' + period + ' not found');
 				// note: this can happen when the note is in a period slide
 				// FIXME
 			}
 		}
 		return result;
-	};
+	}
 
-	me.getNearestSemiTone = function (period, instrumentIndex) {
-		var tuning = 8;
+	getNearestSemiTone(period, instrumentIndex) {
+		let tuning = 8;
 		if (instrumentIndex) {
-			var instrument = trckr.getInstrument(instrumentIndex);
-			if (instrument && instrument.sample.finetune) tuning = tuning + instrument.sample.finetune;
+			const instrument = this.tracker.getInstrument(instrumentIndex);
+			if (instrument && instrument.sample.finetune) {
+				tuning = tuning + instrument.sample.finetune;
+			}
 		}
 
-		var minDelta = 100000;
-		var result = period;
-		for (var note in NOTEPERIOD) {
+		let minDelta = 100000;
+		let result = period;
+		for (const note in NOTEPERIOD) {
 			if (NOTEPERIOD.hasOwnProperty(note)) {
-				var p = NOTEPERIOD[note].tune[tuning];
-				var delta = Math.abs(p - period);
+				const p = NOTEPERIOD[note].tune[tuning];
+				const delta = Math.abs(p - period);
 				if (delta < minDelta) {
 					minDelta = delta;
 					result = p;
@@ -588,122 +593,100 @@ export const Audio = function (trckr) {
 		}
 
 		return result;
-	};
+	}
 
 	// gives the finetuned period for a base period - protracker mode
-	me.getFineTuneForPeriod = function (period, finetune) {
-		var result = period;
-		var note = trckr.periodNoteTable[period];
+	getFineTuneForPeriod(period, finetune) {
+		let result = period;
+		const note = this.tracker.periodNoteTable[period];
 		if (note && note.tune) {
-			var centerTune = 8;
-			var tune = 8 + finetune;
-			if (tune >= 0 && tune < note.tune.length) result = note.tune[tune];
+			let centerTune = 8;
+			let tune = 8 + finetune;
+			if (tune >= 0 && tune < note.tune.length) {
+				result = note.tune[tune];
+			}
 		}
 
 		return result;
-	};
+	}
 
 	// gives the finetuned period for a base note (Fast Tracker Mode)
-	me.getFineTuneForNote = function (note, finetune) {
-		if (note === NOTEOFF) return 1;
+	getFineTuneForNote(note, finetune) {
+		if (note === NOTEOFF) { return 1; }
 
-		var ftNote1 = trckr.FTNotes[note];
-		var ftNote2 = finetune > 0 ? trckr.FTNotes[note + 1] : trckr.FTNotes[note - 1];
+		const ftNote1 = this.tracker.FTNotes[note];
+		const ftNote2 = finetune > 0 ? this.tracker.FTNotes[note + 1] : this.tracker.FTNotes[note - 1];
 
 		if (ftNote1 && ftNote2) {
-			var delta = Math.abs(ftNote2.period - ftNote1.period) / 127;
+			const delta = Math.abs(ftNote2.period - ftNote1.period) / 127;
 			return ftNote1.period - (delta * finetune)
 		}
 
-		console.warn("unable to find finetune for note " + note, ftNote1);
+		console.warn('unable to find finetune for note ' + note, ftNote1);
 		return ftNote1 ? ftNote1.period : 100000;
-
-	};
+	}
 
 	// gives the non-finetuned baseperiod for a finetuned period
-	me.getFineTuneBasePeriod = function (period, finetune) {
-		var result = period;
-		var table = trckr.periodFinetuneTable[finetune];
+	getFineTuneBasePeriod(period, finetune) {
+		let result = period;
+		const table = this.tracker.periodFinetuneTable[finetune];
 		if (table) {
 			result = table[period];
 		}
 		return result;
-	};
+	}
 
-	me.getSampleRateForPeriod = function (period) {
-		if (trckr.inFTMode()) {
-			if (trckr.useLinearFrequency) return (8363 * Math.pow(2, ((4608 - period) / 768)));
+	getSampleRateForPeriod(period) {
+		if (this.tracker.inFTMode()) {
+			if (this.tracker.useLinearFrequency) {
+				return (8363 * Math.pow(2, ((4608 - period) / 768)));
+			}
+
 			return PC_FREQUENCY_HALF / period;
 		}
 		return AMIGA_PALFREQUENCY_HALF / period;
-	};
+	}
 
-	me.limitAmigaPeriod = function (period) {
+	limitAmigaPeriod(period) {
 		// limits the period to the allowed Amiga frequency range, between 113 (B3) and 856 (C1)
-
 		period = Math.max(period, 113);
 		period = Math.min(period, 856);
 
 		return period;
-	};
+	}
 
-	me.setAmigaLowPassFilter = function (on, time) {
+	setAmigaLowPassFilter(on, time) {
 		// note: this is determined by ear comparing a real Amiga 500 - maybe too much effect ?
-		var value = on ? 2000 : 20000;
-		lowPassfilter.frequency.setValueAtTime(value, time);
-	};
+		const value = on ? 2000 : 20000;
+		this.lowPassfilter.frequency.setValueAtTime(value, time);
+	}
 
-	me.setMasterVolume = function (value, time) {
-		time = time || context.currentTime;
+	setMasterVolume(value, time) {
+		time = time || this.context.currentTime;
 		value = value * 0.7;
-		masterVolume.gain.setValueAtTime(lastMasterVolume, time);
-		masterVolume.gain.linearRampToValueAtTime(value, time + 0.02);
-		lastMasterVolume = value;
-	};
+		this.masterVolume.gain.setValueAtTime(this.lastMasterVolume, time);
+		this.masterVolume.gain.linearRampToValueAtTime(value, time + 0.02);
+		this.lastMasterVolume = value;
+	}
 
-	me.slideMasterVolume = function (value, time) {
-		time = time || context.currentTime;
+	slideMasterVolume(value, time) {
+		time = time || this.context.currentTime;
 		value = value * 0.7;
-		masterVolume.gain.linearRampToValueAtTime(value, time);
-		lastMasterVolume = value;
-	};
+		this.masterVolume.gain.linearRampToValueAtTime(value, time);
+		this.lastMasterVolume = value;
+	}
 
-	me.getLastMasterVolume = function () {
-		return lastMasterVolume / 0.7;
-	};
+	getLastMasterVolume() {
+		return this.lastMasterVolume / 0.7;
+	}
 
-	me.clearScheduledNotesCache = function () {
+	clearScheduledNotesCache() {
 		// 3 rotating caches
-		scheduledNotesBucket++;
-		if (scheduledNotesBucket > 2) scheduledNotesBucket = 0;
-		scheduledNotes[scheduledNotesBucket] = [];
-	};
-
-	me.waveFormFunction = {
-		sine: function (period, progress, freq, amp) {
-			return period + (Math.sin(progress * freq * 0.8) * amp * 1.7);
-			// I got the impression that this formaula is more like  amp * 2 in FT2
-			// in Protracker a lookuptable is used - maybe we should adopt that
-		},
-		saw: function (period, progress, freq, amp) {
-			var value = 1 - Math.abs(((progress * freq / 7) % 1)); // from 1 to 0
-			value = (value * 2) - 1; // from -1 to 1
-			value = value * amp * -2;
-			return period + value;
-		},
-		square: function (period, progress, freq, amp) {
-			var value = Math.sin(progress * freq) <= 0 ? -1 : 1;
-			value = value * amp * 2;
-			return period + value;
-		},
-		sawInverse: function (period, progress, freq, amp) {
-			var value = Math.abs((progress * freq / 7) % 1); // from 0 to 1
-			value = (value * 2) - 1; // from -1 to 1
-			value = value * amp * -2;
-			return period + value;
+		this.scheduledNotesBucket++;
+		if (this.scheduledNotesBucket > 2) {
+			this.scheduledNotesBucket = 0;
 		}
-	};
 
-	return me;
-
-};
+		this.scheduledNotes[this.scheduledNotesBucket] = [];
+	}
+}
