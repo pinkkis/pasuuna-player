@@ -1,5 +1,4 @@
 const Instrument = require('../models/instrument');
-const Tracker = require('../tracker');
 const EventBus = require('../eventBus');
 
 const {EVENT,

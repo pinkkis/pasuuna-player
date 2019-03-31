@@ -1,35 +1,30 @@
-// IIFE
-
-const WAAClock = require(WAAClock);
+const WAAClock = require('waaclock');
 const Note = require('./models/note');
 const Instrument = require('./models/instrument');
 const FileDetector = require('./fileformats/detect');
 const { getUrlParameter } = require('./lib/util');
 const { BinaryStream, loadFile } = require('./filesystem');
-const Audio = require('./audio');
 const EventBus = require('./eventBus');
 const Host = require('./host');
 
-const {	UI,
+const { UI,
 	EVENT,
 	PLAYTYPE,
 	NOTEPERIOD,
 	FTNOTEPERIOD,
 	NOTEOFF,
 	TRACKERMODE,
-	SETTINGS} = require('./enum');
+	SETTINGS } = require('./enum');
 
-var periodNoteTable = {};
-var periodFinetuneTable = {};
-var nameNoteTable = {};
-var noteNames = [];
-var FTNotes = [];
-var FTPeriods = [];
-
-var Tracker = (function () {
-
-	// TODO: strip UI stuff
-	var me = {};
+var Tracker = function () {
+	var me = {
+		periodNoteTable : {},
+		periodFinetuneTable : {},
+		nameNoteTable : {},
+		noteNames : [],
+		FTNotes : [],
+		FTPeriods : [],
+	};
 
 	var clock;
 
@@ -57,7 +52,6 @@ var Tracker = (function () {
 	var bpm = 125; // bmp
 	var ticksPerStep = 6;
 	var tickTime = 2.5 / bpm;
-	var tickCounter = 0;
 	var mainTimer;
 
 	var trackCount = 4;
@@ -79,22 +73,22 @@ var Tracker = (function () {
 
 	console.log("ticktime: " + tickTime);
 
-	me.init = function (config) {
+	me.init = function () {
 		for (var i = -8; i < 8; i++) {
-			periodFinetuneTable[i] = {};
+			me.periodFinetuneTable[i] = {};
 		}
 
 		for (var key in NOTEPERIOD) {
 			if (NOTEPERIOD.hasOwnProperty(key)) {
 				var note = NOTEPERIOD[key];
-				periodNoteTable[note.period] = note;
-				nameNoteTable[note.name] = note;
-				noteNames.push(note.name);
+				me.periodNoteTable[note.period] = note;
+				me.nameNoteTable[note.name] = note;
+				me.noteNames.push(note.name);
 
 				// build fineTune table
 				if (note.tune) {
 					for (i = -8; i < 8; i++) {
-						var table = periodFinetuneTable[i];
+						var table = me.periodFinetuneTable[i];
 						var index = i + 8;
 						table[note.tune[index]] = note.period;
 					}
@@ -107,18 +101,12 @@ var Tracker = (function () {
 			if (FTNOTEPERIOD.hasOwnProperty(key)) {
 				var ftNote = FTNOTEPERIOD[key];
 				if (!ftNote.period) ftNote.period = 1;
-				FTNotes.push(ftNote);
-				FTPeriods[ftNote.period] = ftCounter;
-				if (ftNote.modPeriod) FTPeriods[ftNote.modPeriod] = ftCounter;
+				me.FTNotes.push(ftNote);
+				me.FTPeriods[ftNote.period] = ftCounter;
+				if (ftNote.modPeriod) me.FTPeriods[ftNote.modPeriod] = ftCounter;
 				ftCounter++;
 			}
 		}
-
-		if (config) {
-			Audio.init();
-			if (config.plugin) UI.initPlugin(config);
-		}
-
 	};
 
 	me.setCurrentInstrumentIndex = function (index) {
@@ -182,7 +170,7 @@ var Tracker = (function () {
 		EventBus.trigger(EVENT.patternTableChange, value);
 		if (index == currentSongPosition) {
 			prevPattern = undefined;
-			Tracker.setCurrentPattern(value);
+			me.setCurrentPattern(value);
 		}
 	};
 
@@ -418,7 +406,7 @@ var Tracker = (function () {
 							patternLoopCount = [];
 						}
 						p = 0;
-						if (Tracker.getPlayType() == PLAYTYPE.song) {
+						if (me.getPlayType() == PLAYTYPE.song) {
 							var nextPosition = stepResult.positionBreak ? stepResult.targetSongPosition : ++playSongPosition;
 							if (nextPosition >= song.length) {
 								nextPosition = song.restartPosition ? song.restartPosition - 1 : 0;
@@ -506,10 +494,10 @@ var Tracker = (function () {
 			if (note && note.effect && note.effect === 15) {
 				if (note.param <= 32) {
 					//if (note.param == 0) note.param = 1;
-					Tracker.setAmigaSpeed(note.param);
+					me.setAmigaSpeed(note.param);
 					if (note.param === 0) result.pause = true;
 				} else {
-					Tracker.setBPM(note.param)
+					me.setBPM(note.param)
 				}
 			}
 		}
@@ -632,7 +620,7 @@ var Tracker = (function () {
 				if (me.useLinearFrequency) {
 					notePeriod = 7680 - (noteIndex - 1) * 64;
 				} else {
-					var ftNote = FTNotes[noteIndex];
+					var ftNote = me.FTNotes[noteIndex];
 					if (ftNote) notePeriod = ftNote.period;
 				}
 			}
@@ -989,7 +977,7 @@ var Tracker = (function () {
 					trackEffectCache[track].fade = trackEffects.fade;
 				} else {
 					// on Fasttracker this command is remembered - on Protracker it is not.
-					if (Tracker.inFTMode()) {
+					if (me.inFTMode()) {
 						if (trackEffectCache[track].fade) trackEffects.fade = trackEffectCache[track].fade;
 					}
 				}
@@ -1296,9 +1284,9 @@ var Tracker = (function () {
 
 				if (note.param <= 32) {
 					//if (note.param == 0) note.param = 1;
-					Tracker.setAmigaSpeed(note.param, time);
+					me.setAmigaSpeed(note.param, time);
 				} else {
-					Tracker.setBPM(note.param)
+					me.setBPM(note.param)
 				}
 				break;
 
@@ -1897,7 +1885,7 @@ var Tracker = (function () {
 		var autoPlay = getUrlParameter("autoplay");
 		if (!UI && skipHistory) autoPlay = "1";
 		if ((autoPlay == "true") || (autoPlay == "1")) {
-			Tracker.playSong();
+			me.playSong();
 		}
 	};
 
@@ -2125,6 +2113,6 @@ var Tracker = (function () {
 
 
 	return me;
-}());
+};
 
 module.exports = Tracker;

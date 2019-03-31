@@ -1,6 +1,5 @@
 const Note = require('../models/note');
 const Instrument = require('../models/instrument');
-const Tracker = require('../tracker');
 const EventBus = require('../eventBus');
 const {BinaryStream} = require('../filesystem');
 

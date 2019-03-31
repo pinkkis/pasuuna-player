@@ -1,35 +1,39 @@
 {
-  "name": "bassoon-player",
-  "version": "1.0.0",
-  "description": "bassoon-player",
-  "main": "index.js",
-  "scripts": {
-	"start": "webpack-dev-server --mode development --progress --port=8000 --open",
-	"build": "webpack --mode production"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pinkkis/bassoon-player.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/pinkkis/bassoon-player/issues"
-  },
-  "homepage": "https://github.com/pinkkis/bassoon-player#readme",
-  "devDependencies": {
-    "@babel/core": "^7.4.0",
-    "@babel/preset-env": "^7.4.2",
-    "babel-loader": "^8.0.5",
-    "clean-webpack-plugin": "^2.0.1",
-    "http-server": "^0.11.1",
-    "source-map-loader": "^0.2.4",
-    "terser-webpack-plugin": "^1.2.3",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0"
-  },
-  "dependencies": {
-    "waaclock": "^0.5.3"
-  }
+	"name": "bassoon-player",
+	"version": "1.0.0",
+	"description": "bassoon-player",
+	"main": "dist/bassoonplayer.js",
+	"scripts": {
+		"start": "http-server .",
+		"build": "webpack --mode production",
+		"build:dev": "webpack --mode development"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pinkkis/bassoon-player.git"
+	},
+	"keywords": [
+		"mod player",
+		"web audio"
+	],
+	"author": "",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/pinkkis/bassoon-player/issues"
+	},
+	"homepage": "https://github.com/pinkkis/bassoon-player#readme",
+	"devDependencies": {
+		"@babel/core": "^7.4.0",
+		"@babel/preset-env": "^7.4.2",
+		"babel-loader": "^8.0.5",
+		"clean-webpack-plugin": "^2.0.1",
+		"http-server": "^0.11.1",
+		"source-map-loader": "^0.2.4",
+		"terser-webpack-plugin": "^1.2.3",
+		"webpack": "^4.29.6",
+		"webpack-cli": "^3.3.0"
+	},
+	"dependencies": {
+		"waaclock": "^0.5.3"
+	}
 }

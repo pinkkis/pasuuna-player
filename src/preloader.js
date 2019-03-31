@@ -1,5 +1,3 @@
-const Audio = require('./audio');
-
 const {	cachedAssets,
 	PRELOADTYPE } = require('./enum');
 

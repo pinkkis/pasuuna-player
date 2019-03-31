@@ -1,6 +1,4 @@
 const Sample = require('./sample');
-const Tracker = require('../tracker');
-const Audio = require('../audio');
 const EventBus = require('../eventBus');
 
 const {EVENT} = require('../enum');
@@ -295,7 +293,7 @@ var Instrument = function () {
 			result = 7680 - (noteIndex - 1) * 64;
 			if (withFineTune) result -= me.getFineTune() / 2;
 		} else {
-			result = FTNotes[noteIndex].period;
+			result = Tracker.FTNotes[noteIndex].period;
 			if (withFineTune && me.getFineTune()) {
 				result = Audio.getFineTuneForNote(noteIndex, me.getFineTune());
 			}

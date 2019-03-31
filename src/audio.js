@@ -1,5 +1,5 @@
-const Tracker = require('./tracker');
 const EventBus = require('./eventBus');
+const FilterChain = require('./audio/filterChain');
 
 const {	EVENT,
 	STEREOSEPARATION,
@@ -9,7 +9,7 @@ const {	EVENT,
 	NOTEOFF,
 	SETTINGS} = require('./enum');
 
-var Audio = (function () {
+var Audio = function (Tracker) {
 	var me = {};
 
 	window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -22,7 +22,6 @@ var Audio = (function () {
 	var i;
 	var filterChains = [];
 	var isRecording;
-	var recordingAvailable;
 	var mediaRecorder;
 	var recordingChunks = [];
 	var offlineContext;
@@ -77,7 +76,7 @@ var Audio = (function () {
 		audioContext = audioContext || context;
 		if (!audioContext) return;
 
-		usePanning = !!Audio.context.createStereoPanner;
+		usePanning = !!me.context.createStereoPanner;
 		if (!usePanning) {
 			console.warn("Warning: Your browser does not support StereoPanners ... all mods will be played in mono!")
 		}
@@ -271,13 +270,13 @@ var Audio = (function () {
 				source.connect(volumeGain);
 			}
 
-			var volumeFadeOut = Audio.context.createGain();
+			var volumeFadeOut = me.context.createGain();
 			volumeFadeOut.gain.setValueAtTime(0, time);
 			volumeFadeOut.gain.linearRampToValueAtTime(1, time + 0.01);
 			volumeGain.connect(volumeFadeOut);
 
 			if (usePanning) {
-				var panning = Audio.context.createStereoPanner();
+				var panning = me.context.createStereoPanner();
 				panning.pan.setValueAtTime(pan, time);
 				volumeFadeOut.connect(panning);
 				panning.connect(filterChains[track].input());
@@ -519,11 +518,11 @@ var Audio = (function () {
 		target.buffer = source.buffer;
 
 		if (semitones) {
-			var rootNote = periodNoteTable[root];
-			var rootIndex = noteNames.indexOf(rootNote.name);
-			var targetName = noteNames[rootIndex + semitones];
+			var rootNote = Tracker.periodNoteTable[root];
+			var rootIndex = Tracker.noteNames.indexOf(rootNote.name);
+			var targetName = Tracker.noteNames[rootIndex + semitones];
 			if (targetName) {
-				var targetNote = nameNoteTable[targetName];
+				var targetNote = Tracker.nameNoteTable[targetName];
 				if (targetNote) {
 					target.playbackRate.value = (rootNote.period / targetNote.period) * source.playbackRate.value;
 				}
@@ -547,12 +546,12 @@ var Audio = (function () {
 		}
 
 		if (semitones) {
-			var rootNote = periodNoteTable[period];
+			var rootNote = Tracker.periodNoteTable[period];
 			if (rootNote) {
-				var rootIndex = noteNames.indexOf(rootNote.name);
-				var targetName = noteNames[rootIndex + semitones];
+				var rootIndex = Tracker.noteNames.indexOf(rootNote.name);
+				var targetName = Tracker.noteNames[rootIndex + semitones];
 				if (targetName) {
-					var targetNote = nameNoteTable[targetName];
+					var targetNote = Tracker.nameNoteTable[targetName];
 					if (targetNote) {
 						result = targetNote.period;
 						if (finetune) { result = me.getFineTuneForPeriod(result, finetune) }
@@ -593,7 +592,7 @@ var Audio = (function () {
 	// gives the finetuned period for a base period - protracker mode
 	me.getFineTuneForPeriod = function (period, finetune) {
 		var result = period;
-		var note = periodNoteTable[period];
+		var note = Tracker.periodNoteTable[period];
 		if (note && note.tune) {
 			var centerTune = 8;
 			var tune = 8 + finetune;
@@ -607,8 +606,8 @@ var Audio = (function () {
 	me.getFineTuneForNote = function (note, finetune) {
 		if (note === NOTEOFF) return 1;
 
-		var ftNote1 = FTNotes[note];
-		var ftNote2 = finetune > 0 ? FTNotes[note + 1] : FTNotes[note - 1];
+		var ftNote1 = Tracker.FTNotes[note];
+		var ftNote2 = finetune > 0 ? Tracker.FTNotes[note + 1] : Tracker.FTNotes[note - 1];
 
 		if (ftNote1 && ftNote2) {
 			var delta = Math.abs(ftNote2.period - ftNote1.period) / 127;
@@ -623,7 +622,7 @@ var Audio = (function () {
 	// gives the non-finetuned baseperiod for a finetuned period
 	me.getFineTuneBasePeriod = function (period, finetune) {
 		var result = period;
-		var table = periodFinetuneTable[finetune];
+		var table = Tracker.periodFinetuneTable[finetune];
 		if (table) {
 			result = table[period];
 		}
@@ -706,6 +705,6 @@ var Audio = (function () {
 
 	return me;
 
-}());
+};
 
 module.exports = Audio;

@@ -11,12 +11,12 @@ var Note = function () {
 
 	me.setPeriod = function (period) {
 		me.period = period;
-		me.index = FTPeriods[period] || 0;
+		me.index = Tracker.FTPeriods[period] || 0;
 	};
 
 	me.setIndex = function (index) {
 		me.index = index;
-		var ftNote = FTNotes[index];
+		var ftNote = Tracker.FTNotes[index];
 		if (ftNote) {
 			me.period = ftNote.modPeriod || ftNote.period;
 			if (me.period === 1) me.period = 0;

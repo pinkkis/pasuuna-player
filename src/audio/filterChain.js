@@ -1,7 +1,5 @@
 const PreLoader = require('../preloader');
-const Audio = require('../audio');
-const { cachedAssets,
-	PRELOADTYPE } = require('../enum');
+const { cachedAssets, PRELOADTYPE } = require('../enum');
 
 var FilterChain = (function (filters) {
 
