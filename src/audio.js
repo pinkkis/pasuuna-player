@@ -1,4 +1,4 @@
-import { bus } from './eventBus';
+import { events } from './events';
 import { FilterChain } from './audio/filterChain';
 
 import {
@@ -113,22 +113,22 @@ export class Audio {
 		}
 
 		if (!this.isRendering) {
-			bus.on(EVENT.trackStateChange, (state) => {
+			events.on(EVENT.trackStateChange, (state) => {
 				if (typeof state.track !== 'undefined' && this.filterChains[state.track]) {
 					this.filterChains[state.track].volumeValue(state.mute ? 0 : 70);
 				}
 			});
 
-			bus.on(EVENT.trackCountChange, (trackCount) => {
+			events.on(EVENT.trackCountChange, (trackCount) => {
 				for (let i = this.filterChains.length; i < trackCount; i++) {
 					this.addFilterChain();
 				}
 
-				bus.trigger(EVENT.filterChainCountChange, trackCount);
+				events.emit(EVENT.filterChainCountChange, trackCount);
 				this.setStereoSeparation(this.currentStereoSeparation);
 			});
 
-			bus.on(EVENT.trackerModeChanged, (mode) => {
+			events.on(EVENT.trackerModeChanged, (mode) => {
 				this.setStereoSeparation(/*mode*/);
 			});
 		}
@@ -328,7 +328,7 @@ export class Audio {
 			this.scheduledNotes[this.scheduledNotesBucket].push(volumeGain);
 
 			if (!this.isRendering) {
-				bus.trigger(EVENT.samplePlay, result);
+				events.emit(EVENT.samplePlay, result);
 			}
 
 			return result;

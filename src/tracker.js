@@ -4,7 +4,7 @@ import { Instrument } from './models/instrument';
 import { FileDetector } from './fileformats/detect';
 import { loadFile } from './lib/util';
 import { BinaryStream } from './binaryStream';
-import { bus } from './eventBus';
+import { events } from './events';
 import { Audio } from './audio';
 
 import {EVENT,
@@ -20,6 +20,7 @@ let clock;
 
 export class Tracker {
 	constructor() {
+		this.events = events;
 		this.audio = new Audio(this);
 		this.detector = new FileDetector(this);
 		this.useLinearFrequency = true;
@@ -73,7 +74,7 @@ export class Tracker {
 			this.trackEffectCache.push({});
 		}
 
-		console.log('ticktime: ' + this.tickTime);
+		// console.log('ticktime: ' + this.tickTime);
 	}
 
 	init() {
@@ -143,8 +144,8 @@ export class Tracker {
 		}
 		this.song.instruments = this.instruments;
 
-		bus.trigger(EVENT.instrumentListChange, instrumentContainer);
-		bus.trigger(EVENT.instrumentChange, this.currentInstrumentIndex);
+		events.emit(EVENT.instrumentListChange, instrumentContainer);
+		events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
 	}
 
 	clearEffectsCache() {
@@ -159,7 +160,7 @@ export class Tracker {
 		if (this.song.instruments[index]) {
 			this.currentInstrumentIndex = index;
 			if (this.prevInstrumentIndex != this.currentInstrumentIndex) {
-				bus.trigger(EVENT.instrumentChange, this.currentInstrumentIndex);
+				events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
 			}
 			this.prevInstrumentIndex = this.currentInstrumentIndex;
 		} else {
@@ -172,11 +173,11 @@ export class Tracker {
 				for (leti = 1; i <= max; i++) {
 					var instrument = song.instruments[i] || { name: '' };
 					instrumentContainer.push({ label: i + ' ' + instrument.name, data: i });
-					bus.trigger(EVENT.instrumentListChange, instrumentContainer);
+					events.emit(EVENT.instrumentListChange, instrumentContainer);
 				}
 
 				this.currentInstrumentIndex = index;
-				if (this.prevInstrumentIndex != this.currentInstrumentIndex) bus.trigger(EVENT.instrumentChange, this.currentInstrumentIndex);
+				if (this.prevInstrumentIndex != this.currentInstrumentIndex) events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
 				this.prevInstrumentIndex = this.currentInstrumentIndex;
 			}
 		}
@@ -204,7 +205,7 @@ export class Tracker {
 			this.song.patterns[this.currentPattern] = this.currentPatternData;
 		}
 		this.patternLength = this.currentPatternData.length;
-		if (this.prevPattern != this.currentPattern) bus.trigger(EVENT.patternChange, this.currentPattern);
+		if (this.prevPattern != this.currentPattern) events.emit(EVENT.patternChange, this.currentPattern);
 		this.prevPattern = this.currentPattern;
 	}
 
@@ -218,7 +219,7 @@ export class Tracker {
 
 	updatePatternTable(index, value) {
 		this.song.patternTable[index] = value;
-		bus.trigger(EVENT.patternTableChange, value);
+		events.emit(EVENT.patternTableChange, value);
 		if (index == this.currentSongPosition) {
 			this.prevPattern = undefined;
 			this.setCurrentPattern(value);
@@ -227,7 +228,7 @@ export class Tracker {
 
 	setCurrentPatternPos(index) {
 		this.currentPatternPos = index;
-		if (this.prevPatternPos != this.currentPatternPos) bus.trigger(EVENT.patternPosChange, { current: this.currentPatternPos, prev: this.prevPatternPos });
+		if (this.prevPatternPos != this.currentPatternPos) events.emit(EVENT.patternPosChange, { current: this.currentPatternPos, prev: this.prevPatternPos });
 		this.prevPatternPos = this.currentPatternPos;
 	}
 
@@ -250,7 +251,7 @@ export class Tracker {
 	setCurrentSongPosition(position, fromUserInteraction) {
 		this.currentSongPosition = position;
 		if (this.currentSongPosition != this.prevSongPosition) {
-			bus.trigger(EVENT.songPositionChange, this.currentSongPosition);
+			events.emit(EVENT.songPositionChange, this.currentSongPosition);
 			if (this.song.patternTable) this.setCurrentPattern(this.song.patternTable[this.currentSongPosition]);
 			this.prevSongPosition = this.currentSongPosition;
 
@@ -275,8 +276,8 @@ export class Tracker {
 			// TODO: insert pattern;
 		}
 
-		bus.trigger(EVENT.songPropertyChange, this.song);
-		bus.trigger(EVENT.patternTableChange);
+		events.emit(EVENT.songPropertyChange, this.song);
+		events.emit(EVENT.patternTableChange);
 	}
 
 	removeFromPatternTable(index) {
@@ -296,13 +297,13 @@ export class Tracker {
 			this.setCurrentSongPosition(this.currentSongPosition - 1);
 		}
 
-		bus.trigger(EVENT.songPropertyChange, this.song);
-		bus.trigger(EVENT.patternTableChange);
+		events.emit(EVENT.songPropertyChange, this.song);
+		events.emit(EVENT.patternTableChange);
 	}
 
 	setPlayType(playType) {
 		this.currentPlayType = playType;
-		bus.trigger(EVENT.playTypeChange, this.currentPlayType);
+		events.emit(EVENT.playTypeChange, this.currentPlayType);
 	}
 
 	getPlayType() {
@@ -317,7 +318,7 @@ export class Tracker {
 		this.isPlaying = true;
 		//this.audio.startRecording();
 		this.playPattern(this.currentPattern);
-		bus.trigger(EVENT.playingChange, this.isPlaying);
+		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
 	playPattern() {
@@ -328,7 +329,7 @@ export class Tracker {
 		this.setPlayType(PLAYTYPE.pattern);
 		this.isPlaying = true;
 		playPattern(this.currentPattern);
-		bus.trigger(EVENT.playingChange, this.isPlaying);
+		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
 	stop() {
@@ -350,14 +351,14 @@ export class Tracker {
 		}
 
 		this.isPlaying = false;
-		bus.trigger(EVENT.playingChange, this.isPlaying);
+		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
 	pause() {
 		// this is only called when speed is set to 0
 		if (clock) clock.stop();
 		this.isPlaying = false;
-		bus.trigger(EVENT.playingChange, this.isPlaying);
+		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
 	togglePlay() {
@@ -1714,7 +1715,7 @@ export class Tracker {
 		if (clock) clock.timeStretch(this.audio.context.currentTime, [this.mainTimer], this.bpm / newBPM);
 		this.bpm = newBPM;
 		this.tickTime = 2.5 / this.bpm;
-		bus.trigger(EVENT.songBPMChange, this.bpm);
+		events.emit(EVENT.songBPMChange, this.bpm);
 	}
 
 	getBPM() {
@@ -1760,7 +1761,7 @@ export class Tracker {
 			}
 		}
 
-		bus.trigger(EVENT.patternChange, this.currentPattern);
+		events.emit(EVENT.patternChange, this.currentPattern);
 	}
 
 	getTrackCount() {
@@ -1773,13 +1774,13 @@ export class Tracker {
 		for (var i = this.trackNotes.length; i < this.trackCount; i++) this.trackNotes.push({});
 		for (i = this.trackEffectCache.length; i < this.trackCount; i++) this.trackEffectCache.push({});
 
-		bus.trigger(EVENT.trackCountChange, this.trackCount);
+		events.emit(EVENT.trackCountChange, this.trackCount);
 	}
 
 	toggleRecord() {
 		this.stop();
 		this.isRecording = !isRecording;
-		bus.trigger(EVENT.recordingChange, this.isRecording);
+		events.emit(EVENT.recordingChange, this.isRecording);
 	};
 
 	isRecording() {
@@ -1913,14 +1914,14 @@ export class Tracker {
 
 		this.clearEffectsCache();
 
-		bus.trigger(EVENT.songLoaded, this.song);
-		bus.trigger(EVENT.songPropertyChange, this.song);
+		events.emit(EVENT.songLoaded, this.song);
+		events.emit(EVENT.songPropertyChange, this.song);
 	}
 
 	setTrackerMode(mode) {
 		this.trackerMode = mode;
 		SETTINGS.emulateProtracker1OffsetBug = !this.inFTMode();
-		bus.trigger(EVENT.trackerModeChanged, mode);
+		events.emit(EVENT.trackerModeChanged, mode);
 	}
 
 	getTrackerMode() {
@@ -1958,8 +1959,8 @@ export class Tracker {
 
 	clearInstrument() {
 		this.instruments[this.currentInstrumentIndex] = new Instrument(this);
-		bus.trigger(EVENT.instrumentChange, this.currentInstrumentIndex);
-		bus.trigger(EVENT.instrumentNameChange, this.currentInstrumentIndex);
+		events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
+		events.emit(EVENT.instrumentNameChange, this.currentInstrumentIndex);
 	};
 
 	getFileName() {

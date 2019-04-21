@@ -3,7 +3,7 @@ import { Note } from '../models/note';
 import { Instrument } from '../models/instrument';
 import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
 import { processEnvelope, checkEnvelope } from '../lib/util';
-import { bus as EventBus } from '../eventBus';
+import { events } from '../events';
 
 export class FastTracker {
 	constructor(tracker) {
@@ -268,7 +268,7 @@ export class FastTracker {
 
 		}
 
-		EventBus.trigger(EVENT.instrumentListChange, instrumentContainer);
+		events.emit(EVENT.instrumentListChange, instrumentContainer);
 		song.instruments = this.tracker.getInstruments();
 
 		this.tracker.setBPM(mod.defaultBPM);

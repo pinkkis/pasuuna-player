@@ -1,6 +1,6 @@
 {
 	"name": "pasuuna",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "javascript MOD player with mod and xm support",
 	"main": "dist/pasuunaplayer.js",
 	"scripts": {
@@ -35,11 +35,11 @@
 		"http-server": "^0.11.1",
 		"source-map-loader": "^0.2.4",
 		"terser-webpack-plugin": "^1.2.3",
-		"tiny-emitter": "^2.1.0",
 		"webpack": "^4.29.6",
 		"webpack-cli": "^3.3.0"
 	},
 	"dependencies": {
+		"tiny-emitter": "^2.1.0",
 		"waaclock": "^0.5.3"
 	}
 }

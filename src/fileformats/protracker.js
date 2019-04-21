@@ -1,7 +1,7 @@
 import { Note } from '../models/note';
 import { Instrument } from '../models/instrument';
 import { EVENT, LOOPTYPE, TRACKERMODE, SETTINGS } from '../enum';
-import { bus } from '../eventBus';
+import { events } from '../events';
 
 // TODO: tracker global ref
 
@@ -173,7 +173,7 @@ export class ProTracker {
 			}
 		}
 
-		bus.trigger(EVENT.instrumentListChange, instrumentContainer);
+		events.emit(EVENT.instrumentListChange, instrumentContainer);
 
 		return song;
 	}
