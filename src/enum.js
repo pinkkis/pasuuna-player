@@ -1,10 +1,3 @@
-export const PRELOADTYPE = {
-	"image": 1,
-	"audio": 2,
-	"json": 3,
-	"binary": 4
-};
-
 export const EVENT = {
 	instrumentChange: 1,
 	patternChange: 2,

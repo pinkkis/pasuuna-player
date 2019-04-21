@@ -12,10 +12,10 @@ import {
 } from './enum';
 
 export class Audio {
-	constructor(tracker) {
+	constructor(tracker, audioContext = null) {
 		this.tracker = tracker;
 
-		this.audioContext = new AudioContext();
+		this.audioContext = audioContext || new AudioContext();
 		this.offlineContext = null;
 		this.context = this.audioContext;
 

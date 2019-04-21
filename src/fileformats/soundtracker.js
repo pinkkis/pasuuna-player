@@ -7,7 +7,7 @@ export class SoundTracker {
 		this.tracker = tracker;
 	}
 
-	load(file, name) {
+	load(file) {
 		this.tracker.setTrackerMode(TRACKERMODE.PROTRACKER);
 		this.tracker.useLinearFrequency = false;
 		this.tracker.clearInstruments(15);

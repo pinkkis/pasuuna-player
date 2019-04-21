@@ -1,6 +1,6 @@
-import {Sample} from './sample';
+import { Sample } from './sample';
 import { events } from '../events';
-import {EVENT} from '../enum';
+import { EVENT } from '../enum';
 
 export class Instrument {
 	constructor(tracker) {

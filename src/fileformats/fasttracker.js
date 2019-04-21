@@ -11,13 +11,13 @@ export class FastTracker {
 	}
 
 	// see ftp://ftp.modland.com/pub/documents/format_documentation/FastTracker%202%20v2.04%20(.xm).html
-	load(file, name) {
+	load(file) {
 		console.log('loading FastTracker');
 		this.tracker.setTrackerMode(TRACKERMODE.FASTTRACKER);
 		this.tracker.clearInstruments(1);
 
-		let mod = {};
-		let song = {
+		const mod = {};
+		const song = {
 			patterns: [],
 			instruments: []
 		};

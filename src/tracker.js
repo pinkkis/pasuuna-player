@@ -17,9 +17,9 @@ import {EVENT,
 } from './enum';
 
 export class Tracker {
-	constructor() {
+	constructor(audioContext = null) {
 		this.events = events;
-		this.audio = new Audio(this);
+		this.audio = new Audio(this, audioContext);
 		this.detector = new FileDetector(this);
 		this.useLinearFrequency = true;
 
