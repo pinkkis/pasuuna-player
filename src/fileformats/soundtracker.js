@@ -1,6 +1,6 @@
 import { Instrument } from '../models/instrument';
 import { EVENT, LOOPTYPE, TRACKERMODE } from '../enum';
-import { bus } from '../eventBus';
+import { events } from '../events';
 
 export class SoundTracker {
 	constructor(tracker) {
@@ -107,7 +107,7 @@ export class SoundTracker {
 			}
 		}
 
-		bus.trigger(EVENT.instrumentListChange, instrumentContainer);
+		events.emit(EVENT.instrumentListChange, instrumentContainer);
 
 		return song;
 	};

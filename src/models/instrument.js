@@ -1,5 +1,5 @@
 import {Sample} from './sample';
-import {bus as EventBus} from '../eventBus';
+import { events } from '../events';
 import {EVENT} from '../enum';
 
 export class Instrument {
@@ -312,7 +312,7 @@ export class Instrument {
 			this.sample = this.samples[index];
 			this.sampleIndex = index;
 
-			EventBus.trigger(EVENT.sampleIndexChange, this.instrumentIndex);
+			events.emit(EVENT.sampleIndexChange, this.instrumentIndex);
 		}
 	};
 
