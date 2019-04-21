@@ -1,13 +1,15 @@
 {
-	"name": "pasuuna",
-	"version": "0.3.0",
-	"description": "javascript MOD player with mod and xm support",
+	"name": "@pinkkis/pasuuna-player",
+	"version": "0.4.1",
+	"description": "Javascript MOD player with mod and xm support",
 	"main": "dist/pasuunaplayer.js",
 	"scripts": {
 		"start": "http-server .",
 		"build": "webpack --mode production",
-		"build:dev": "webpack --mode development"
+		"build:dev": "webpack --mode development",
+		"prepare": "npm run build"
 	},
+	"files": [],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/pinkkis/pasuuna-player.git"
@@ -16,7 +18,16 @@
 		"mod player",
 		"web audio"
 	],
-	"author": "",
+	"author": {
+		"name": "Kristian Koivisto-Kokko",
+		"url": "https://pinkkis.com"
+	},
+	"contributors": [
+		{
+			"name": "Steffest",
+			"url": "https://github.com/steffest"
+		}
+	],
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/pinkkis/pasuuna-player/issues"

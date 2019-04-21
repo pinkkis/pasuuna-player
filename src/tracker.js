@@ -1806,11 +1806,10 @@ export class Tracker {
 		trackNote.source.playbackRate.setValueAtTime(rate, time);
 	}
 
-	load(url, skipHistory, next) {
-		// TODO: remove this default
+	load(url) {
 		url = url || '';
-
 		let name = '';
+
 		if (typeof url === 'string') {
 			name = url.substr(url.lastIndexOf('/') + 1);
 			loadFile(url, (result) => {
@@ -1818,7 +1817,6 @@ export class Tracker {
 			});
 		} else {
 			name = url.name || '';
-			skipHistory = true;
 			this.processFile(url.buffer || url, name);
 		}
 	}

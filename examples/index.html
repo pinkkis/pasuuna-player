@@ -178,11 +178,12 @@
 				};
 				document.getElementById("scope").appendChild(scopeCanvas);
 
-				var analyser = BassoonTracker.audio.context.createAnalyser();
+				const tracker = new PasuunaPlayer.Tracker();
+				var analyser = tracker.audio.context.createAnalyser();
 				analyser.smoothingTimeConstant = 0.85;
 
-				BassoonTracker.init(true);
-				if (!BassoonTracker.audio.context) {
+				tracker.init(true);
+				if (!tracker.audio.context) {
 					songName.innerHTML = "Sorry<br>Your browser does not support WebAudio.<br>Supported browsers are Chrome,Firefox,Safari and Edge";
 				} else {
 
@@ -196,8 +197,8 @@
 					playItem = function (url) {
 						stopPlay();
 						songName.innerHTML = "Loading ...";
-						BassoonTracker.load(url, false, function () {
-							var song = BassoonTracker.getSong();
+						tracker.load(url, false, function () {
+							var song = tracker.getSong();
 							songName.innerHTML = song.title;
 
 							// We could loop over all the patterns to get the real length, but a rough estimate is good enough.
@@ -218,33 +219,33 @@
 
 					// setup progress bar to seek into the song
 					progressBar.oninput = function () {
-						wasPlaying = wasPlaying || BassoonTracker.isPlaying;
+						wasPlaying = wasPlaying || tracker.isPlaying;
 						stopPlay();
 					};
 					progressBar.onchange = function () {
 						// align to start of pattern
 						var songPos = Math.floor((songLength * progressBar.value / 100) / patternLength);
-						BassoonTracker.setCurrentSongPosition(songPos);
+						tracker.setCurrentSongPosition(songPos);
 						if (wasPlaying) togglePlay();
 						wasPlaying = false;
 					};
 
 					// setup progress bar to seek into the song
 					volumeBar.oninput = volumeBar.onchange = function () {
-						BassoonTracker.audio.masterVolume.gain.cancelScheduledValues(0);
-						BassoonTracker.audio.masterVolume.gain.setValueAtTime(volumeBar.value / 100, 0);
+						tracker.audio.masterVolume.gain.cancelScheduledValues(0);
+						tracker.audio.masterVolume.gain.setValueAtTime(volumeBar.value / 100, 0);
 					};
 
-					BassoonTracker.audio.cutOffVolume.connect(analyser);
+					tracker.audio.cutOffVolume.connect(analyser);
 
 					// setup simple timer
 					// this has nothing to do with audio playback, it's only used to update the UI once in a while;
 					requestAnimationFrame(function loop() {
 						if (startTime) {
 
-							if (BassoonTracker.isPlaying) {
+							if (tracker.isPlaying) {
 								var time = new Date().getTime() - startTime;
-								var state = BassoonTracker.getStateAtTime(time);
+								var state = tracker.getStateAtTime(time);
 								if (state) {
 									var currentPos = state.songPos * patternLength + state.patternPos;
 									var percentage = currentPos * 100 / songLength;
@@ -261,8 +262,8 @@
 				}
 
 				function togglePlay() {
-					BassoonTracker.togglePlay();
-					if (BassoonTracker.isPlaying) {
+					tracker.togglePlay();
+					if (tracker.isPlaying) {
 						startTime = new Date().getTime();
 						playButton.innerHTML = "Pause";
 					} else {
@@ -271,7 +272,7 @@
 				}
 
 				function stopPlay() {
-					BassoonTracker.stop();
+					tracker.stop();
 					playButton.innerHTML = "Play";
 				}
 
