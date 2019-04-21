@@ -71,8 +71,8 @@ export class BinaryStream {
 
 	readString(len, position) {
 		this.setIndex(position);
+		const src = this.dataView;
 		let i = this.index;
-		let src = this.dataView;
 		let text = '';
 
 		if ((len += i) > this.length) {
@@ -92,14 +92,14 @@ export class BinaryStream {
 	// same as readUshort
 	readWord(position) {
 		this.setIndex(position);
-		var w = this.dataView.getUint16(this.index, this.littleEndian);
+		const w = this.dataView.getUint16(this.index, this.littleEndian);
 		this.index += 2;
 		return w;
 	}
 
 	readShort(value, position) {
 		this.setIndex(position);
-		var w = this.dataView.getInt16(this.index, this.littleEndian);
+		const w = this.dataView.getInt16(this.index, this.littleEndian);
 		this.index += 2;
 		return w;
 	};

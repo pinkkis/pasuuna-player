@@ -8,6 +8,7 @@ module.exports = {
 	entry: {
 		player: ['./src/index.js']
 	},
+	devtool: process.env.NODE_ENV === 'production' ? undefined : 'eval-source-map',
 	module: {
 		rules: [{
 			test: /\.m?[t|j]sx?$/,

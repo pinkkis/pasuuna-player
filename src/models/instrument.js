@@ -20,27 +20,33 @@ export class Instrument {
 	}
 
 	processEnvelop(envelope, audioNode, time) {
-		var tickTime = this.tracker.getProperties().tickTime;
-		var maxPoint = envelope.sustain ? envelope.sustainPoint + 1 : envelope.count;
+		const tickTime = this.tracker.getProperties().tickTime;
+		let maxPoint = envelope.sustain ? envelope.sustainPoint + 1 : envelope.count;
+		let scheduledTime = 0;
+		let lastX = 0;
+		let audioParam;
+		let center;
+		let max;
 
 		// some XM files seem to have loop points outside the range.
 		// e.g. springmellow_p_ii.xm - instrument 15;
 		envelope.loopStartPoint = Math.min(envelope.loopStartPoint, envelope.count - 1);
 		envelope.loopEndPoint = Math.min(envelope.loopEndPoint, envelope.count - 1);
 
-		var doLoop = envelope.loop && (envelope.loopStartPoint < envelope.loopEndPoint);
-		if (envelope.sustain && envelope.sustainPoint <= envelope.loopStartPoint) doLoop = false;
+		let doLoop = envelope.loop && (envelope.loopStartPoint < envelope.loopEndPoint);
+		if (envelope.sustain && envelope.sustainPoint <= envelope.loopStartPoint) {
+			doLoop = false;
+		}
 
-
-		if (doLoop) maxPoint = envelope.loopEndPoint + 1;
-		var scheduledTime = 0;
-		var lastX = 0;
+		if (doLoop) {
+			maxPoint = envelope.loopEndPoint + 1;
+		}
 
 		if (audioNode.gain) {
 			// volume
-			var audioParam = audioNode.gain;
-			var center = 0;
-			var max = 64;
+			audioParam = audioNode.gain;
+			center = 0;
+			max = 64;
 		} else {
 			// panning node
 			audioParam = audioNode.pan;
@@ -50,8 +56,8 @@ export class Instrument {
 
 		audioParam.setValueAtTime((envelope.points[0][1] - center) / max, time);
 
-		for (var p = 1; p < maxPoint; p++) {
-			var point = envelope.points[p];
+		for (let p = 1; p < maxPoint; p++) {
+			const point = envelope.points[p];
 			lastX = point[0];
 			scheduledTime = lastX * tickTime;
 			audioParam.linearRampToValueAtTime((point[1] - center) / max, time + scheduledTime);
@@ -72,22 +78,28 @@ export class Instrument {
 	};
 
 	noteOn(time) {
-		var volumeEnvelope;
-		var panningEnvelope;
-		var scheduled = {};
+		let volumeEnvelope;
+		let panningEnvelope;
+		let envelope;
+		let scheduledTime;
+		const scheduled = {};
 
 		if (this.volumeEnvelope.enabled) {
 			volumeEnvelope = this.tracker.audio.context.createGain();
-			var envelope = this.volumeEnvelope;
-			var scheduledTime = this.processEnvelop(envelope, volumeEnvelope, time);
-			if (scheduledTime) scheduled.volume = (time + scheduledTime);
+			envelope = this.volumeEnvelope;
+			scheduledTime = this.processEnvelop(envelope, volumeEnvelope, time);
+			if (scheduledTime) {
+				scheduled.volume = (time + scheduledTime);
+			}
 		}
 
 		if (this.panningEnvelope.enabled && this.tracker.audio.usePanning) {
 			panningEnvelope = this.tracker.audio.context.createStereoPanner();
 			envelope = this.panningEnvelope;
 			scheduledTime = this.processEnvelop(envelope, panningEnvelope, time);
-			if (scheduledTime) scheduled.panning = (time + scheduledTime);
+			if (scheduledTime) {
+				scheduled.panning = (time + scheduledTime);
+			}
 		}
 
 		if (this.vibrato.rate && this.vibrato.depth) {
@@ -107,30 +119,40 @@ export class Instrument {
 			noteInfo.volume.gain.cancelScheduledValues(time);
 			noteInfo.volumeFadeOut.gain.cancelScheduledValues(time);
 
-			if (noteInfo.volumeEnvelope) noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
-			if (noteInfo.panningEnvelope) noteInfo.panningEnvelope.pan.cancelScheduledValues(time);
+			if (noteInfo.volumeEnvelope) {
+				noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
+			}
+
+			if (noteInfo.panningEnvelope) {
+				noteInfo.panningEnvelope.pan.cancelScheduledValues(time);
+			}
+
 			noteInfo.scheduled = undefined;
 		}
 
-
 		if (this.tracker.inFTMode()) {
-			var tickTime = this.tracker.getProperties().tickTime;
+			const tickTime = this.tracker.getProperties().tickTime;
 
 			if (this.volumeEnvelope.enabled) {
-
 				if (this.volumeEnvelope.sustain && noteInfo.volumeEnvelope) {
 					cancelScheduledValues();
-					var timeOffset = 0;
-					var startPoint = this.volumeEnvelope.points[this.volumeEnvelope.sustainPoint];
-					if (startPoint) timeOffset = startPoint[0] * tickTime;
-					for (var p = this.volumeEnvelope.sustainPoint; p < this.volumeEnvelope.count; p++) {
-						var point = this.volumeEnvelope.points[p];
-						if (point) noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime) - timeOffset);
+					let timeOffset = 0;
+					const startPoint = this.volumeEnvelope.points[this.volumeEnvelope.sustainPoint];
+
+					if (startPoint) {
+						timeOffset = startPoint[0] * tickTime;
+					}
+
+					for (let p = this.volumeEnvelope.sustainPoint; p < this.volumeEnvelope.count; p++) {
+						const point = this.volumeEnvelope.points[p];
+						if (point) {
+							noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime) - timeOffset);
+						}
 					}
 				}
 
 				if (this.fadeout) {
-					var fadeOutTime = (65536 / this.fadeout) * tickTime / 2;
+					const fadeOutTime = (65536 / this.fadeout) * tickTime / 2;
 					noteInfo.volumeFadeOut.gain.linearRampToValueAtTime(0, time + fadeOutTime);
 				}
 
@@ -140,12 +162,17 @@ export class Instrument {
 			}
 
 			if (this.panningEnvelope.enabled && this.tracker.audio.usePanning) {
-				timeOffset = 0;
-				startPoint = this.panningEnvelope.points[this.panningEnvelope.sustainPoint];
-				if (startPoint) timeOffset = startPoint[0] * tickTime;
-				for (p = this.panningEnvelope.sustainPoint; p < this.panningEnvelope.count; p++) {
-					point = this.panningEnvelope.points[p];
-					if (point) noteInfo.panningEnvelope.pan.linearRampToValueAtTime((point[1] - 32) / 32, time + (point[0] * tickTime) - timeOffset);
+				let timeOffset = 0;
+				const startPoint = this.panningEnvelope.points[this.panningEnvelope.sustainPoint];
+				if (startPoint) {
+					timeOffset = startPoint[0] * tickTime;
+				}
+
+				for (let p = this.panningEnvelope.sustainPoint; p < this.panningEnvelope.count; p++) {
+					const point = this.panningEnvelope.points[p];
+					if (point) {
+						noteInfo.panningEnvelope.pan.linearRampToValueAtTime((point[1] - 32) / 32, time + (point[0] * tickTime) - timeOffset);
+					}
 				}
 			}
 
@@ -163,18 +190,20 @@ export class Instrument {
 	};
 
 	scheduleEnvelopeLoop(audioNode, startTime, seconds, scheduledTime) {
-
 		// note - this is not 100% accurate when the ticktime would change during the scheduled ahead time
-
 		scheduledTime = scheduledTime || 0;
-		var tickTime = this.tracker.getProperties().tickTime;
+		const tickTime = this.tracker.getProperties().tickTime;
+		let envelope;
+		let audioParam;
+		let center;
+		let max;
 
 		if (audioNode.gain) {
 			// volume
-			var envelope = this.volumeEnvelope;
-			var audioParam = audioNode.gain;
-			var center = 0;
-			var max = 64;
+			envelope = this.volumeEnvelope;
+			audioParam = audioNode.gain;
+			center = 0;
+			max = 64;
 		} else {
 			// panning node
 			envelope = this.panningEnvelope;
@@ -182,14 +211,15 @@ export class Instrument {
 			center = 32;
 			max = 32;
 		}
-		var point = envelope.points[envelope.loopStartPoint];
-		var loopStartX = point[0];
 
-		var doLoop = envelope.loop && (envelope.loopStartPoint < envelope.loopEndPoint);
+		let point = envelope.points[envelope.loopStartPoint];
+		let loopStartX = point[0];
+
+		const doLoop = envelope.loop && (envelope.loopStartPoint < envelope.loopEndPoint);
 		if (doLoop) {
 			while (scheduledTime < seconds) {
-				var startScheduledTime = scheduledTime;
-				for (var p = envelope.loopStartPoint; p <= envelope.loopEndPoint; p++) {
+				const startScheduledTime = scheduledTime;
+				for (let p = envelope.loopStartPoint; p <= envelope.loopEndPoint; p++) {
 					point = envelope.points[p];
 					scheduledTime = startScheduledTime + ((point[0] - loopStartX) * tickTime);
 					audioParam.linearRampToValueAtTime((point[1] - center) / max, startTime + scheduledTime);
@@ -198,21 +228,23 @@ export class Instrument {
 		}
 
 		return scheduledTime;
-
 	};
 
 
 	scheduleAutoVibrato(note, seconds) {
 		// this is only used for keyboard notes as in the player the main playback timer is used for this
-		var scheduledTime = 0;
+		const tickTime = this.tracker.getProperties().tickTime;
+		let scheduledTime = 0;
 		note.scheduled.ticks = note.scheduled.ticks || 0;
-		var tickTime = this.tracker.getProperties().tickTime;
 
-		var freq = -this.vibrato.rate / 40;
-		var amp = this.vibrato.depth / 8;
-		if (this.tracker.useLinearFrequency) amp *= 4;
+		const freq = -this.vibrato.rate / 40;
+		const amp = this.tracker.useLinearFrequency ? this.vibrato.depth / 2 : this.vibrato.depth / 8;
 
-		var currentPeriod, vibratoFunction, time, tick;
+		let currentPeriod;
+		let vibratoFunction;
+		let time;
+		let tick;
+
 		if (note.source) {
 			currentPeriod = note.startPeriod;
 			vibratoFunction = note.scheduled.vibratoFunction || this.tracker.audio.waveFormFunction.sine;
@@ -225,12 +257,12 @@ export class Instrument {
 			scheduledTime += tickTime;
 
 			if (currentPeriod) {
-				var sweepAmp = 1;
+				let sweepAmp = 1;
 				if (this.vibrato.sweep && note.scheduled.ticks < this.vibrato.sweep) {
 					sweepAmp = 1 - ((this.vibrato.sweep - note.scheduled.ticks) / this.vibrato.sweep);
 				}
 
-				var targetPeriod = vibratoFunction(currentPeriod, note.scheduled.ticks, freq, amp * sweepAmp);
+				const targetPeriod = vibratoFunction(currentPeriod, note.scheduled.ticks, freq, amp * sweepAmp);
 				this.tracker.setPeriodAtTime(note, targetPeriod, time + (tick * tickTime));
 				tick++;
 			}
@@ -257,12 +289,13 @@ export class Instrument {
 
 		if (noteInfo.volumeEnvelope) {
 			noteInfo.volumeEnvelope.gain.cancelScheduledValues(time);
-			var tickTime = this.tracker.getProperties().tickTime;
+			const tickTime = this.tracker.getProperties().tickTime;
+			const maxPoint = this.volumeEnvelope.sustain ? this.volumeEnvelope.sustainPoint + 1 : this.volumeEnvelope.count;
 
-			var maxPoint = this.volumeEnvelope.sustain ? this.volumeEnvelope.sustainPoint + 1 : this.volumeEnvelope.count;
 			noteInfo.volumeEnvelope.gain.setValueAtTime(this.volumeEnvelope.points[0][1] / 64, time);
-			for (var p = 1; p < maxPoint; p++) {
-				var point = this.volumeEnvelope.points[p];
+
+			for (let p = 1; p < maxPoint; p++) {
+				const point = this.volumeEnvelope.points[p];
 				noteInfo.volumeEnvelope.gain.linearRampToValueAtTime(point[1] / 64, time + (point[0] * tickTime));
 			}
 		}
@@ -285,7 +318,7 @@ export class Instrument {
 
 	// in FT mode
 	getPeriodForNote(noteIndex, withFineTune) {
-		var result = 0;
+		let result = 0;
 
 		if (this.tracker.useLinearFrequency) {
 			result = 7680 - (noteIndex - 1) * 64;
@@ -301,7 +334,7 @@ export class Instrument {
 	};
 
 	setSampleForNoteIndex(noteIndex) {
-		var sampleIndex = this.sampleNumberForNotes[noteIndex - 1];
+		const sampleIndex = this.sampleNumberForNotes[noteIndex - 1];
 		if (sampleIndex !== this.sampleIndex && typeof sampleIndex === 'number') {
 			this.setSampleIndex(sampleIndex);
 		}
@@ -317,7 +350,7 @@ export class Instrument {
 	};
 
 	hasSamples() {
-		for (var i = 0, max = this.samples.length; i < max; i++) {
+		for (let i = 0, max = this.samples.length; i < max; i++) {
 			if (this.samples[i].length) {
 				return true;
 			}

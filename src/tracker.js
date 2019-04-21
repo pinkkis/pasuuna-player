@@ -32,13 +32,12 @@ export class Tracker {
 		this.FTNotes = [];
 		this.FTPeriods = [];
 
-		this.isRecording = false;
 		this.isPlaying = false;
 		this.song = null;
 		this.instruments = [];
 
 		this.currentInstrumentIndex = 1;
-		this.prevInstrumentIndex;
+		this.prevInstrumentIndex = null;
 
 		this.currentPattern = 0;
 		this.prevPattern = null;
@@ -61,20 +60,14 @@ export class Tracker {
 
 		this.patternLength = 64;
 		this.trackerMode = TRACKERMODE.PROTRACKER;
-		this.trackNotes = [];
-		this.trackEffectCache = [];
 		this.trackerStates = [];
 		this.patternLoopStart = [];
 		this.patternLoopCount = [];
 
-		// do this on ctor?
 		this.trackCount = 4;
-		for (let i = 0; i < this.trackCount; i++) {
-			this.trackNotes.push({});
-			this.trackEffectCache.push({});
-		}
 
-		// console.log('ticktime: ' + this.tickTime);
+		this.clearEffectsCache();
+		this.clearTrackNotes();
 	}
 
 	init() {
@@ -121,8 +114,8 @@ export class Tracker {
 
 		this.vibratoFunction = this.audio.waveFormFunction.sine;
 		this.tremoloFunction = this.audio.waveFormFunction.sine;
-		this.trackNotes = [];
 
+		this.clearTrackNotes();
 		this.clearEffectsCache();
 
 		this.useLinearFrequency = false;
@@ -132,9 +125,12 @@ export class Tracker {
 	}
 
 	clearInstruments(count) {
-		if (!this.song) return;
+		if (!this.song) {
+			return;
+		}
+
 		const instrumentContainer = [];
-		const max = count || song.instruments.length - 1;
+		const max = count || this.song.instruments.length - 1;
 
 		this.instruments = [];
 
@@ -148,51 +144,20 @@ export class Tracker {
 		events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
 	}
 
-	clearEffectsCache() {
-		this.trackEffectsCache = [];
+	clearTrackNotes() {
+		this.trackNotes = [];
 
 		for (let i = 0; i < this.trackCount; i++) {
-			this.trackEffectsCache.push({});
+			this.trackNotes.push({});
 		}
 	}
 
-	setCurrentInstrumentIndex(index) {
-		if (this.song.instruments[index]) {
-			this.currentInstrumentIndex = index;
-			if (this.prevInstrumentIndex != this.currentInstrumentIndex) {
-				events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
-			}
-			this.prevInstrumentIndex = this.currentInstrumentIndex;
-		} else {
-			if (index <= this.getMaxInstruments()) {
-				for (let i = this.song.instruments.length, max = index; i <= max; i++) {
-					this.setInstrument(i, new Instrument(this));
-				}
+	clearEffectsCache() {
+		this.trackEffectCache = [];
 
-				const instrumentContainer = [];
-				for (leti = 1; i <= max; i++) {
-					var instrument = song.instruments[i] || { name: '' };
-					instrumentContainer.push({ label: i + ' ' + instrument.name, data: i });
-					events.emit(EVENT.instrumentListChange, instrumentContainer);
-				}
-
-				this.currentInstrumentIndex = index;
-				if (this.prevInstrumentIndex != this.currentInstrumentIndex) events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
-				this.prevInstrumentIndex = this.currentInstrumentIndex;
-			}
+		for (let i = 0; i < this.trackCount; i++) {
+			this.trackEffectCache.push({});
 		}
-	}
-
-	getCurrentInstrumentIndex() {
-		return this.currentInstrumentIndex;
-	}
-
-	getCurrentInstrument() {
-		return this.instruments[this.currentInstrumentIndex];
-	}
-
-	getMaxInstruments() {
-		return this.inFTMode() ? 128 : 31;
 	}
 
 	setCurrentPattern(index) {
@@ -248,11 +213,15 @@ export class Tracker {
 		return this.currentSongPosition;
 	}
 
-	setCurrentSongPosition(position, fromUserInteraction) {
+	setCurrentSongPosition(position, fromUserInteraction = false) {
 		this.currentSongPosition = position;
 		if (this.currentSongPosition != this.prevSongPosition) {
 			events.emit(EVENT.songPositionChange, this.currentSongPosition);
-			if (this.song.patternTable) this.setCurrentPattern(this.song.patternTable[this.currentSongPosition]);
+
+			if (this.song.patternTable) {
+				this.setCurrentPattern(this.song.patternTable[this.currentSongPosition]);
+			}
+
 			this.prevSongPosition = this.currentSongPosition;
 
 			if (fromUserInteraction && this.isPlaying) {
@@ -313,10 +282,8 @@ export class Tracker {
 	playSong() {
 		this.stop();
 		this.audio.checkState();
-		//this.audio.setMasterVolume(1);
 		this.setPlayType(PLAYTYPE.song);
 		this.isPlaying = true;
-		//this.audio.startRecording();
 		this.playPattern(this.currentPattern);
 		events.emit(EVENT.playingChange, this.isPlaying);
 	}
@@ -324,7 +291,6 @@ export class Tracker {
 	playPattern() {
 		this.stop();
 		this.audio.checkState();
-		//this.audio.setMasterVolume(1);
 		this.currentPatternPos = 0;
 		this.setPlayType(PLAYTYPE.pattern);
 		this.isPlaying = true;
@@ -338,14 +304,12 @@ export class Tracker {
 		this.audio.setMasterVolume(1);
 		this.clearEffectsCache();
 
-		//this.audio.stopRecording();
-
 		for (let i = 0; i < this.trackCount; i++) {
 			if (this.trackNotes[i].source) {
 				try {
 					this.trackNotes[i].source.stop();
 				} catch (e) {
-					//
+					// swallow error
 				}
 			}
 		}
@@ -386,7 +350,6 @@ export class Tracker {
 		clock = clock || new WAAClock(this.audio.context);
 		clock.start();
 		this.audio.enable();
-		// if (UI) UI.setStatus('Playing');
 		this.patternLoopStart = [];
 		this.patternLoopCount = [];
 
@@ -1771,21 +1734,16 @@ export class Tracker {
 	setTrackCount(count) {
 		this.trackCount = count;
 
-		for (var i = this.trackNotes.length; i < this.trackCount; i++) this.trackNotes.push({});
-		for (i = this.trackEffectCache.length; i < this.trackCount; i++) this.trackEffectCache.push({});
+		for (let i = this.trackNotes.length; i < this.trackCount; i++) {
+			this.trackNotes.push({});
+		}
+
+		for (let i = this.trackEffectCache.length; i < this.trackCount; i++) {
+			this.trackEffectCache.push({});
+		}
 
 		events.emit(EVENT.trackCountChange, this.trackCount);
 	}
-
-	toggleRecord() {
-		this.stop();
-		this.isRecording = !isRecording;
-		events.emit(EVENT.recordingChange, this.isRecording);
-	};
-
-	isRecording() {
-		return this.isRecording;
-	};
 
 	setStateAtTime(time, state) {
 		this.trackerStates.push({ time: time, state: state });
@@ -1899,9 +1857,11 @@ export class Tracker {
 
 
 	onModuleLoad() {
-		// if (UI) UI.setInfo(song.title);
+		events.emit(EVENT.songLoading, this.song);
 
-		if (this.song.channels) this.setTrackCount(this.song.channels);
+		if (this.song.channels) {
+			this.setTrackCount(this.song.channels);
+		}
 
 		this.prevPatternPos = undefined;
 		this.prevInstrumentIndex = undefined;
@@ -1910,7 +1870,7 @@ export class Tracker {
 
 		this.setCurrentSongPosition(0);
 		this.setCurrentPatternPos(0);
-		this.setCurrentInstrumentIndex(1);
+		// this.setCurrentInstrumentIndex(1);
 
 		this.clearEffectsCache();
 
