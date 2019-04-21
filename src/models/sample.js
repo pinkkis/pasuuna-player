@@ -20,10 +20,10 @@ export class Sample {
 	check() {
 		let min = 0;
 		let max = 0;
-		for (var i = 0, len = this.data.length; i < len; i++) {
+		for (let i = 0; i < this.data.length; i++) {
 			min = Math.min(min, this.data[i]);
 			max = Math.max(max, this.data[i]);
 		}
-		return { min: min, max: max };
+		return { min, max };
 	}
 }

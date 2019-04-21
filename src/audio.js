@@ -12,10 +12,10 @@ import {
 } from './enum';
 
 export class Audio {
-	constructor(tracker) {
+	constructor(tracker, audioContext = null) {
 		this.tracker = tracker;
 
-		this.audioContext = new AudioContext();
+		this.audioContext = audioContext || new AudioContext();
 		this.offlineContext = null;
 		this.context = this.audioContext;
 
@@ -23,9 +23,7 @@ export class Audio {
 		this.cutOffVolume = null;
 		this.lowPassfilter = null;
 		this.filterChains = [];
-		this.isRecording = false;
 		this.mediaRecorder = null;
-		this.recordingChunks = [];
 		this.currentStereoSeparation = STEREOSEPARATION.BALANCED;
 		this.lastMasterVolume = 0;
 		this.usePanning = false;
@@ -304,7 +302,7 @@ export class Audio {
 
 			source.start(playTime, offset);
 
-			var result = {
+			const result = {
 				source: source,
 				volume: volumeGain,
 				panning: panning,
@@ -359,43 +357,6 @@ export class Audio {
 			source.start();
 		}
 	};
-
-	// startRecording() {
-	// 	if (!isRecording) {
-
-	// 		if (context && context.createMediaStreamDestination) {
-	// 			var dest = context.createMediaStreamDestination();
-	// 			mediaRecorder = new MediaRecorder(dest.stream);
-
-	// 			iaRecorder.ondataavailable(evt) {
-	// 				// push each chunk (blobs) in an array
-	// 				recordingChunks.push(evt.data);
-	// 			};
-
-	// 			iaRecorder.onstop(evt) {
-	// 				var blob = new Blob(recordingChunks, { 'type': 'audio/ogg; codecs=opus' });
-	// 				saveAs(blob, 'recording.opus');
-	// 				//document.querySelector('audio').src = URL.createObjectURL(blob);
-	// 			};
-
-
-	// 			masterVolume.connect(dest);
-	// 			mediaRecorder.start();
-	// 			isRecording = true;
-
-	// 		} else {
-	// 			console.error('recording is not supported on this browser');
-	// 		}
-
-	// 	}
-	// };
-
-	// stopRecording() {
-	// 	if (isRecording) {
-	// 		isRecording = false;
-	// 		mediaRecorder.stop();
-	// 	}
-	// };
 
 	startRendering(length) {
 		this.isRendering = true;
@@ -454,8 +415,10 @@ export class Audio {
 		}
 
 		for (let i = 0; i < numberOfTracks; i++) {
-			var filter = this.filterChains[i];
-			if (filter) filter.panningValue(i % 2 == 0 ? -panAmount : panAmount);
+			const filter = this.filterChains[i];
+			if (filter) {
+				filter.panningValue(i % 2 == 0 ? -panAmount : panAmount);
+			}
 		}
 	};
 

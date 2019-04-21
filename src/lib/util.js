@@ -1,18 +1,3 @@
-export function getUrlParameter(param) {
-	if (window.location.getParameter) {
-		return window.location.getParameter(param);
-	} else if (location.search) {
-		var parts = location.search.substring(1).split('&');
-		for (var i = 0; i < parts.length; i++) {
-			var nv = parts[i].split('=');
-			if (!nv[0]) continue;
-			if (nv[0] == param) {
-				return nv[1] || true;
-			}
-		}
-	}
-}
-
 export function processEnvelope(envelope) {
 	envelope.points = [];
 
@@ -20,7 +5,8 @@ export function processEnvelope(envelope) {
 		envelope.points.push(envelope.raw.slice(si * 2, si * 2 + 2));
 	}
 
-	if (envelope.type & 1) { // on
+	if (envelope.type & 1) {
+		// on
 		envelope.enabled = true;
 	}
 
@@ -120,7 +106,7 @@ export function loadFile(url, next) {
 	const req = new XMLHttpRequest();
 	req.open('GET', url, true);
 	req.responseType = 'arraybuffer';
-	req.onload = (event) => {
+	req.onload = () => {
 		const arrayBuffer = req.response;
 		if (arrayBuffer) {
 			if (next) next(arrayBuffer);
@@ -131,5 +117,6 @@ export function loadFile(url, next) {
 			}
 		}
 	};
+
 	req.send(null);
 }

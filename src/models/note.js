@@ -16,10 +16,12 @@ export class Note {
 
 	setIndex(index) {
 		this.index = index;
-		var ftNote = this.tracker.FTNotes[index];
+		const ftNote = this.tracker.FTNotes[index];
 		if (ftNote) {
 			this.period = ftNote.modPeriod || ftNote.period;
-			if (this.period === 1) this.period = 0;
+			if (this.period === 1) {
+				this.period = 0;
+			}
 		} else {
 			console.warn("No note for index " + index);
 			this.period = 0;

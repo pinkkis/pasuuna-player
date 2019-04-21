@@ -1,70 +1,25 @@
-export const cachedAssets = {
-	images: {},
-	audio: {},
-	json: {},
-	arrayBuffer: {}
-};
-
-export const sprites = {};
-export const UI = undefined;
-
-export const PRELOADTYPE = {
-	"image": 1,
-	"audio": 2,
-	"json": 3,
-	"binary": 4
-};
-
 export const EVENT = {
 	instrumentChange: 1,
 	patternChange: 2,
 	patternPosChange: 3,
 	patternTableChange: 4,
-	recordingChange: 5,
-	cursorPositionChange: 6,
 	trackStateChange: 7,
 	playingChange: 8,
 	playTypeChange: 9,
 	songPositionChange: 10,
-	songSpeedChange: 11,
+	// songSpeedChange: 11,
 	songBPMChange: 12,
 	samplePlay: 13,
-	screenRefresh: 14,
-	screenRender: 15,
 	songPropertyChange: 16,
 	instrumentNameChange: 17,
 	command: 18,
-	pianoNoteOn: 19,
-	pianoNoteOff: 20,
-	statusChange: 21,
-	diskOperationTargetChange: 22,
-	diskOperationActionChange: 23,
 	trackCountChange: 24,
-	patternHorizontalScrollChange: 25,
 	songLoaded: 26,
 	songLoading: 27,
 	trackerModeChanged: 28,
 	instrumentListChange: 29,
-	showView: 30,
-	toggleView: 31,
-	visibleTracksCountChange: 32,
 	filterChainCountChange: 33,
-	fxPanelToggle: 34,
-	samplePropertyChange: 35,
 	sampleIndexChange: 36,
-	second: 37,
-	minute: 38,
-	dropboxConnect: 39,
-	dropboxConnectCancel: 40,
-	trackScopeClick: 41,
-	octaveChanged: 42,
-	skipFrameChanged: 43,
-	showContextMenu: 44,
-	hideContextMenu: 45,
-	clockEventExpired: 46,
-	commandUndo: 50,
-	commandRedo: 51,
-	commandSelectAll: 52
 };
 
 export const PLAYTYPE = {
@@ -84,15 +39,6 @@ export const MODULETYPE = {
 	xm: 2
 };
 
-export const SAMPLETYPE = {
-	RAW_8BIT: 1,
-	WAVE_PCM: 2,
-	IFF_8SVX: 3,
-	MP3: 4,
-	RIFF_8BIT: 5,
-	RIFF_16BIT: 6
-};
-
 export const STEREOSEPARATION = {
 	FULL: 1,
 	BALANCED: 2,
@@ -110,16 +56,6 @@ export const LOOPTYPE = {
 	PINGPONG: 2
 };
 
-export const SELECTION = {
-	RESET: 1,
-	CLEAR: 2,
-	CUT: 3,
-	COPY: 4,
-	PASTE: 5,
-	POSITION: 6
-
-};
-
 
 // Amiga Frequency
 //export const PALFREQUENCY = 7093789.2;
@@ -130,15 +66,6 @@ export const PC_FREQUENCY = 7158728;
 
 export const AMIGA_PALFREQUENCY_HALF = AMIGA_PALFREQUENCY / 2;
 export const PC_FREQUENCY_HALF = PC_FREQUENCY / 2;
-
-export const LAYOUTS = {
-	column4: 4,
-	column5: 5,
-	column5Full: 6,
-	column6: 7
-};
-
-
 
 // used in Protracker mode
 export const NOTEPERIOD = {
@@ -280,7 +207,6 @@ export const FTNOTEPERIOD = {
 	As7: { name: "A#7", period: 30 },
 	B7: { name: "B-7", period: 28.3125, modPeriod: 28 },
 
-
 	// not used in fileformat but can be played through transposed notes
 	C8: { name: "C-8", period: 26.75 },
 	Cs8: { name: "C#8", period: 25.25 },
@@ -335,22 +261,6 @@ export const FTNOTEPERIOD = {
 };
 
 export const NOTEOFF = 145;
-
-export const OCTAVENOTES = {
-	0: { name: "OFF" },
-	1: { name: "C" },
-	2: { name: "Cs" },
-	3: { name: "D" },
-	4: { name: "Ds" },
-	5: { name: "E" },
-	6: { name: "F" },
-	7: { name: "Fs" },
-	8: { name: "G" },
-	9: { name: "Gs" },
-	10: { name: "A" },
-	11: { name: "As" },
-	12: { name: "B" }
-};
 
 export const TRACKERMODE = {
 	PROTRACKER: 1,
