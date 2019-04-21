@@ -16,8 +16,6 @@ import {EVENT,
 	SETTINGS
 } from './enum';
 
-let clock;
-
 export class Tracker {
 	constructor() {
 		this.events = events;
@@ -57,6 +55,7 @@ export class Tracker {
 		this.ticksPerStep = 6;
 		this.tickTime = 2.5 / this.bpm;
 		this.mainTimer = null;
+		this.clock = null;
 
 		this.patternLength = 64;
 		this.trackerMode = TRACKERMODE.PROTRACKER;
@@ -202,10 +201,17 @@ export class Tracker {
 	}
 
 	moveCurrentPatternPos(amount) {
-		var newPos = this.currentPatternPos + amount;
-		var max = this.patternLength - 1;
-		if (newPos < 0) newPos = max;
-		if (newPos > max) newPos = 0;
+		let newPos = this.currentPatternPos + amount;
+		let max = this.patternLength - 1;
+
+		if (newPos < 0) {
+			newPos = max;
+		}
+
+		if (newPos > max) {
+			newPos = 0;
+		}
+
 		this.setCurrentPatternPos(newPos);
 	}
 
@@ -299,7 +305,7 @@ export class Tracker {
 	}
 
 	stop() {
-		if (clock) clock.stop();
+		if (this.clock) this.clock.stop();
 		this.audio.disable();
 		this.audio.setMasterVolume(1);
 		this.clearEffectsCache();
@@ -320,7 +326,7 @@ export class Tracker {
 
 	pause() {
 		// this is only called when speed is set to 0
-		if (clock) clock.stop();
+		if (this.clock) this.clock.stop();
 		this.isPlaying = false;
 		events.emit(EVENT.playingChange, this.isPlaying);
 	}
@@ -347,47 +353,45 @@ export class Tracker {
 	playPattern(patternIndex) {
 		this.patternIndex = this.patternIndex || 0;
 
-		clock = clock || new WAAClock(this.audio.context);
-		clock.start();
-		this.audio.enable();
+		this.clock = this.clock || new WAAClock(this.audio.context);
+		this.clock.start();
+		this.audio.enable(); // TODO: if external audio context, don't turn it off
 		this.patternLoopStart = [];
 		this.patternLoopCount = [];
 
 		this.currentPatternData = this.song.patterns[patternIndex];
-		var thisPatternLength = this.currentPatternData.length;
-		var stepResult = {};
+
+		let thisPatternLength = this.currentPatternData.length;
+		let stepResult = {};
 
 		// look-ahead playback - far less demanding, works OK on mobile devices
-		var p = 0;
-		var time = this.audio.context.currentTime + 0.1; //  add small delay to allow some time to render the first notes before playing
-
+		let p = 0;
+		let time = this.audio.context.currentTime + 0.1; //  add small delay to allow some time to render the first notes before playing
 
 		// start with a small delay then make it longer
 		// this is because Chrome on Android doesn't start playing until the first batch of scheduling is done?
+		let delay = 0.2;
+		const playingDelay = 1;
 
-		var delay = 0.2;
-		var playingDelay = 1;
-
-		var playPatternData = this.currentPatternData;
-		var playSongPosition = this.currentSongPosition;
+		let playPatternData = this.currentPatternData;
+		let playSongPosition = this.currentSongPosition;
 		this.trackerStates = [];
 
-		this.mainTimer = clock.setTimeout(function (event) {
+		this.mainTimer = this.clock.setTimeout(function (event) {
 
 			if (p > 1) {
 				delay = playingDelay;
 				this.mainTimer.repeat(delay);
 			}
 
-			var maxTime = event.deadline + delay;
+			const maxTime = event.deadline + delay;
 			this.audio.clearScheduledNotesCache();
 
 			while (time < maxTime) {
-
 				if (stepResult.pause) {
 					// speed is set to 0
-					if (!stepResult.pasuseHandled) {
-						var delta = time - this.audio.context.currentTime;
+					if (!stepResult.pauseHandled) {
+						const delta = time - this.audio.context.currentTime;
 						if (delta > 0) {
 							setTimeout(function () {
 								this.pause();
@@ -396,7 +400,7 @@ export class Tracker {
 								this.setAmigaSpeed(6);
 							}, Math.round(delta * 1000) + 100);
 						}
-						stepResult.pasuseHandled = true;
+						stepResult.pauseHandled = true;
 					}
 					return;
 				}
@@ -407,7 +411,7 @@ export class Tracker {
 					// the E14 effect is used: delay Pattern but keep processing effects
 					stepResult.patternDelay--;
 
-					for (i = 0; i < this.trackCount; i++) {
+					for (let i = 0; i < this.trackCount; i++) {
 						applyEffects(i, time)
 					}
 
@@ -416,6 +420,7 @@ export class Tracker {
 					stepResult = this.playPatternStep(p, time, playPatternData, playSongPosition);
 					time += this.ticksPerStep * this.tickTime;
 					p++;
+
 					if (p >= thisPatternLength || stepResult.patternBreak) {
 						if (!(stepResult.positionBreak && stepResult.targetSongPosition == playSongPosition)) {
 							//We're not in a pattern loop
@@ -423,12 +428,16 @@ export class Tracker {
 							this.patternLoopCount = [];
 						}
 						p = 0;
+
 						if (this.getPlayType() == PLAYTYPE.song) {
-							var nextPosition = stepResult.positionBreak ? stepResult.targetSongPosition : ++playSongPosition;
+							let nextPosition = stepResult.positionBreak ? stepResult.targetSongPosition : ++playSongPosition;
 							if (nextPosition >= this.song.length) {
 								nextPosition = this.song.restartPosition ? this.song.restartPosition - 1 : 0;
 							}
-							if (nextPosition >= this.song.length) nextPosition = 0;
+							if (nextPosition >= this.song.length) {
+								nextPosition = 0;
+							}
+
 							playSongPosition = nextPosition;
 							patternIndex = this.song.patternTable[playSongPosition];
 							playPatternData = this.song.patterns[patternIndex];
@@ -442,12 +451,16 @@ export class Tracker {
 							thisPatternLength = playPatternData.length;
 							if (stepResult.patternBreak) {
 								p = stepResult.targetPatternPosition || 0;
-								if (p > playPatternData.length) p = 0; // occurs in the wild - example 'Lake Of Sadness' - last pattern
+								if (p > playPatternData.length) {
+									p = 0; // occurs in the wild - example 'Lake Of Sadness' - last pattern
+								}
 							}
 						} else {
 							if (stepResult.patternBreak) {
 								p = stepResult.targetPatternPosition || 0;
-								if (p > patternLength) p = 0;
+								if (p > patternLength) {
+									p = 0;
+								}
 							}
 						}
 					}
@@ -464,14 +477,14 @@ export class Tracker {
 
 					if (trackNote.scheduled.volume) {
 						if ((time + delay) >= trackNote.scheduled.volume) {
-							var scheduledtime = instrument.scheduleEnvelopeLoop(trackNote.volumeEnvelope, trackNote.scheduled.volume, 2);
+							const scheduledtime = instrument.scheduleEnvelopeLoop(trackNote.volumeEnvelope, trackNote.scheduled.volume, 2);
 							trackNote.scheduled.volume += scheduledtime;
 						}
 					}
 
 					if (trackNote.scheduled.panning) {
 						if ((time + delay) >= trackNote.scheduled.panning) {
-							scheduledtime = instrument.scheduleEnvelopeLoop(trackNote.panningEnvelope, trackNote.scheduled.panning, 2);
+							const scheduledtime = instrument.scheduleEnvelopeLoop(trackNote.panningEnvelope, trackNote.scheduled.panning, 2);
 							trackNote.scheduled.panning += scheduledtime;
 						}
 					}
@@ -485,9 +498,9 @@ export class Tracker {
 		patternData = patternData || currentPatternData;
 		// note: patternData can be different than currentPatternData when playback is active with long look ahead times
 
-		var patternStep = patternData[step];
-		var tracks = this.trackCount;
-		var result = {};
+		const patternStep = patternData[step];
+		const tracks = this.trackCount;
+		const result = {};
 
 		// hmmm ... Whut?
 		// The Speed setting influences other effects too,
@@ -514,9 +527,12 @@ export class Tracker {
 		for (let i = 0; i < tracks; i++) {
 			const note = patternStep[i];
 			if (note) {
-				var songPos = { position: songPostition, step: step };
+				const songPos = {
+					position: songPostition,
+					step: step
+				};
 
-				var playtime = time;
+				const playtime = time;
 
 				const r = this.playNote(note, i, playtime, songPos);
 				if (r.patternBreak) {
@@ -540,14 +556,13 @@ export class Tracker {
 	}
 
 	playNote(note, track, time, songPos) {
+		let defaultVolume = 100;
+		const trackEffects = {};
 
-		var defaultVolume = 100;
-		var trackEffects = {};
-
-		var instrumentIndex = note.instrument;
-		var notePeriod = note.period;
-		var noteIndex = note.index;
-
+		let instrumentIndex = note.instrument;
+		let notePeriod = note.period;
+		let noteIndex = note.index;
+		let instrument;
 
 		if (notePeriod && !instrumentIndex) {
 			// reuse previous instrument
@@ -562,9 +577,8 @@ export class Tracker {
 			}
 		}
 
-
 		if (typeof note.instrument === 'number') {
-			const instrument = this.getInstrument(note.instrument);
+			instrument = this.getInstrument(note.instrument);
 			if (instrument) {
 				defaultVolume = 100 * (instrument.sample.volume / 64);
 
@@ -577,16 +591,12 @@ export class Tracker {
 			}
 		}
 
-
-
-		var volume = defaultVolume;
-		var doPlayNote = true;
-
+		let volume = defaultVolume;
+		let doPlayNote = true;
 
 		if (typeof instrumentIndex === 'number') {
 			instrument = this.getInstrument(instrumentIndex);
 		}
-
 
 		if (noteIndex && this.inFTMode()) {
 
@@ -595,7 +605,7 @@ export class Tracker {
 			}
 
 			if (noteIndex === NOTEOFF) {
-				var offInstrument = instrument || this.getInstrument(this.trackNotes[track].currentInstrument);
+				const offInstrument = instrument || this.getInstrument(this.trackNotes[track].currentInstrument);
 				if (offInstrument) {
 					volume = offInstrument.noteOff(time, this.trackNotes[track]);
 				} else {
@@ -605,12 +615,13 @@ export class Tracker {
 				defaultVolume = volume;
 				doPlayNote = false;
 			} else {
-
 				if (instrument) {
 					instrument.setSampleForNoteIndex(noteIndex);
 
-					if (instrument.sample.relativeNote) noteIndex += instrument.sample.relativeNote;
-					// TODO - check of note gets out of range
+					if (instrument.sample.relativeNote) {
+						noteIndex += instrument.sample.relativeNote;
+					}
+					// TODO: check of note gets out of range
 					// but apparently they still get played ... -> extend scale to 9, 10 or 11 octaves ?
 					// see jt_letgo.xm instrument 6 (track 20) for example
 				}
@@ -618,20 +629,21 @@ export class Tracker {
 				if (this.useLinearFrequency) {
 					notePeriod = 7680 - (noteIndex - 1) * 64;
 				} else {
-					var ftNote = this.FTNotes[noteIndex];
-					if (ftNote) notePeriod = ftNote.period;
+					const ftNote = this.FTNotes[noteIndex];
+					if (ftNote) {
+						notePeriod = ftNote.period;
+					}
 				}
 			}
 		}
 
-
-		var value = note.param;
-		var x, y;
-
-		var result = {};
+		let value = note.param;
+		let x;
+		let y;
+		const result = {};
 
 		if (note.volumeEffect && this.inFTMode()) {
-			var ve = note.volumeEffect;
+			const ve = note.volumeEffect;
 			x = ve >> 4;
 			y = ve & 0x0f;
 
@@ -649,27 +661,27 @@ export class Tracker {
 					case 6:
 						// volume slide down
 						trackEffects.fade = {
-							value: y * -1 * 100 / 64
+							value: -y * 100 / 64,
 						};
 						break;
 					case 7:
 						// volume slide up
 						trackEffects.fade = {
-							value: y * 100 / 64
+							value: y * 100 / 64,
 						};
 						break;
 					case 8:
 						// Fine volume slide down
 						trackEffects.fade = {
 							value: -y * 100 / 64,
-							fine: true
+							fine: true,
 						};
 						break;
 					case 9:
 						// Fine volume slide up
 						trackEffects.fade = {
 							value: y * 100 / 64,
-							fine: true
+							fine: true,
 						};
 						break;
 					case 10:
@@ -684,7 +696,7 @@ export class Tracker {
 						// Set panning
 						trackEffects.panning = {
 							value: (ve - 192) * 17,
-							slide: false
+							slide: false,
 						};
 						break;
 					case 13:
@@ -692,7 +704,7 @@ export class Tracker {
 						console.warn('Panning slide left not implemented - track ' + track);
 						trackEffects.panning = {
 							value: ve,
-							slide: true
+							slide: true,
 						};
 						break;
 					case 14:
@@ -705,7 +717,6 @@ export class Tracker {
 						break;
 				}
 			}
-
 		}
 
 		switch (note.effect) {
@@ -714,21 +725,17 @@ export class Tracker {
 				if (value) {
 					x = value >> 4;
 					y = value & 0x0f;
+					let finetune = 0;
 
-
-					var finetune = 0;
-
-
-					//todo: when a instrument index is present other than the previous index, but no note
-					// how does this work?
-					// see example just_about_seven.mod
-
+					// TODO: when a instrument index is present other than the previous index, but no note
+					// how does this work? see example just_about_seven.mod
 					instrument = instrument || this.getInstrument(this.trackNotes[track].currentInstrument);
 
 					if (this.inFTMode()) {
 						if (instrument) {
-							var _noteIndex = noteIndex || this.trackNotes[track].noteIndex;
-							var root = instrument.getPeriodForNote(_noteIndex, true);
+							const _noteIndex = noteIndex || this.trackNotes[track].noteIndex;
+							const root = instrument.getPeriodForNote(_noteIndex, true);
+
 							if (noteIndex === NOTEOFF) {
 								trackEffects.arpeggio = this.trackEffectCache[track].arpeggio;
 							} else {
@@ -757,8 +764,6 @@ export class Tracker {
 							step: 1
 						};
 					}
-
-
 				}
 
 				// set volume, even if no effect present
@@ -766,7 +771,7 @@ export class Tracker {
 				// on Protracker 2.3 and 3.0, the volume effect seems much bigger - why ? (see 'nugget - frust.mod')
 				if (note.instrument) {
 					trackEffects.volume = {
-						value: defaultVolume
+						value: defaultVolume,
 					};
 				}
 
@@ -818,7 +823,7 @@ export class Tracker {
 				// milkytracker tries, but not perfect
 				// the ProTracker clone of 8bitbubsy does this completely compatible to protracker2.
 
-				var target = notePeriod;
+				let target = notePeriod;
 				if (this.inFTMode() && noteIndex === NOTEOFF) target = 0;
 
 				// avoid using the fineTune of another instrument if another instrument index is present
@@ -826,17 +831,18 @@ export class Tracker {
 
 				if (target && instrumentIndex) {
 					// check if the instrument is finetuned
-					var instrument = this.getInstrument(instrumentIndex);
+					const instrument = this.getInstrument(instrumentIndex);
 					if (instrument && instrument.getFineTune()) {
 						target = this.inFTMode() ? instrument.getPeriodForNote(noteIndex, true) : this.audio.getFineTuneForPeriod(target, instrument.getFineTune());
 					}
 				}
 
-				var prevSlide = this.trackEffectCache[track].slide;
+				const prevSlide = this.trackEffectCache[track].slide;
 
 				if (prevSlide) {
 					if (!value) value = prevSlide.value;
 				}
+
 				if (!target) {
 					target = this.trackEffectCache[track].defaultSlideTarget;
 				}
@@ -848,6 +854,7 @@ export class Tracker {
 					resetVolume: !!note.instrument,
 					volume: defaultVolume
 				};
+
 				this.trackEffectCache[track].slide = trackEffects.slide;
 
 				if (note.instrument) {
@@ -873,16 +880,22 @@ export class Tracker {
 				x = value >> 4;
 				y = value & 0x0f;
 
-				var freq = (x * this.ticksPerStep) / 64;
+				let freq = (x * this.ticksPerStep) / 64;
+				const prevVibrato = this.trackEffectCache[track].vibrato;
 
-				var prevVibrato = this.trackEffectCache[track].vibrato;
-				if (x == 0 && prevVibrato) freq = prevVibrato.freq;
-				if (y == 0 && prevVibrato) y = prevVibrato.amplitude;
+				if (x == 0 && prevVibrato) {
+					freq = prevVibrato.freq;
+				}
+
+				if (y == 0 && prevVibrato) {
+					y = prevVibrato.amplitude;
+				}
 
 				trackEffects.vibrato = {
 					amplitude: y,
 					freq: freq
 				};
+
 				this.trackEffectCache[track].vibrato = trackEffects.vibrato;
 
 				break;
@@ -901,16 +914,17 @@ export class Tracker {
 
 				value = 1;
 
-				var prevSlide = this.trackEffectCache[track].slide;
-				if (prevSlide) {
-					if (!target) target = prevSlide.target || 0;
-					value = prevSlide.value;
+				const contPrevSlide = this.trackEffectCache[track].slide;
+				if (contPrevSlide) {
+					if (!target) target = contPrevSlide.target || 0;
+					value = contPrevSlide.value;
 				}
 
 				trackEffects.slide = {
 					value: value,
 					target: target
 				};
+
 				this.trackEffectCache[track].slide = trackEffects.slide;
 
 				if (note.instrument) {
@@ -942,13 +956,10 @@ export class Tracker {
 					};
 					this.trackEffectCache[track].fade = trackEffects.fade;
 				}
-
 				break;
-
 
 			case 6:
 				// Continue Vibrato and do volume slide
-
 				// reset volume and vibrato timer if instrument number is present
 				if (note.instrument) {
 					if (this.trackNotes[track].startVolume) {
@@ -974,6 +985,7 @@ export class Tracker {
 					trackEffects.fade = {
 						value: value
 					};
+
 					this.trackEffectCache[track].fade = trackEffects.fade;
 				} else {
 					// on Fasttracker this command is remembered - on Protracker it is not.
@@ -1002,18 +1014,21 @@ export class Tracker {
 				x = value >> 4;
 				y = value & 0x0f;
 
-				//var amplitude = y * (ticksPerStep-1); Note: this is the formula in the mod spec, but this seems way off;
-				var amplitude = y;
-				var freq = (x * this.ticksPerStep) / 64;
+				let amplitude = y;
+				let tFreq = (x * this.ticksPerStep) / 64;
+				const prevTremolo = this.trackEffectCache[track].tremolo;
 
-				var prevTremolo = this.trackEffectCache[track].tremolo;
+				if (x == 0 && prevTremolo) {
+					tFreq = prevTremolo.freq;
+				}
 
-				if (x == 0 && prevTremolo) freq = prevTremolo.freq;
-				if (y == 0 && prevTremolo) amplitude = prevTremolo.amplitude;
+				if (y == 0 && prevTremolo) {
+					amplitude = prevTremolo.amplitude;
+				}
 
 				trackEffects.tremolo = {
 					amplitude: amplitude,
-					freq: freq
+					freq: tFreq
 				};
 
 				this.trackEffectCache[track].tremolo = trackEffects.tremolo;
@@ -1040,14 +1055,13 @@ export class Tracker {
 				  -> the effect cache of the previous 9 command of the instrument is used
 				 * if a note is present REAPPLY the offset in the effect cache (but don't set start of instrument)
 				  -> the effect cache now contains double the offset
-
 				 */
 
 				value = value << 8;
 				if (!value && this.trackEffectCache[track].offset) {
 					value = this.trackEffectCache[track].offset.stepValue || this.trackEffectCache[track].offset.value || 0;
 				}
-				var stepValue = value;
+				const stepValue = value;
 
 				if (SETTINGS.emulateProtracker1OffsetBug && !note.instrument && this.trackEffectCache[track].offset) {
 					// bug in PT1 and PT2: add to existing offset if no instrument number is given
@@ -1102,8 +1116,10 @@ export class Tracker {
 				value = value * 100 / 64;
 
 				if (!note.param) {
-					var prevFade = this.trackEffectCache[track].fade;
-					if (prevFade) value = prevFade.value;
+					const prevFade = this.trackEffectCache[track].fade;
+					if (prevFade) {
+						value = prevFade.value;
+					}
 				}
 
 				trackEffects.fade = {
@@ -1141,8 +1157,8 @@ export class Tracker {
 				break;
 			case 14:
 				// Subeffects
-				var subEffect = value >> 4;
-				var subValue = value & 0x0f;
+				const subEffect = value >> 4;
+				let subValue = value & 0x0f;
 				switch (subEffect) {
 					case 0:
 						if (!this.inFTMode()) this.audio.setAmigaLowPassFilter(!subValue, time);
@@ -1181,7 +1197,7 @@ export class Tracker {
 						break;
 					case 5: // Set Fine Tune
 						if (instrumentIndex) {
-							var instrument = this.getInstrument(instrumentIndex);
+							const instrument = this.getInstrument(instrumentIndex);
 							trackEffects.fineTune = {
 								original: instrument.getFineTune(),
 								instrument: instrument
@@ -1300,11 +1316,12 @@ export class Tracker {
 
 				x = value >> 4;
 				y = value & 0x0f;
-				var currentVolume = this.audio.getLastMasterVolume() * 64;
+				const currentVolume = this.audio.getLastMasterVolume() * 64;
+				let amount = 0;
+				let targetTime;
 
-				var amount = 0;
 				if (x) {
-					var targetTime = time + (x * this.tickTime);
+					targetTime = time + (x * this.tickTime);
 					amount = x * (this.ticksPerStep - 1);
 				} else if (y) {
 					targetTime = time + (y * this.tickTime);
@@ -1400,7 +1417,7 @@ export class Tracker {
 		// ramp to 0 volume to avoid clicks
 		try {
 			if (this.trackNotes[track].source) {
-				var gain = this.trackNotes[track].volume.gain;
+				const gain = this.trackNotes[track].volume.gain;
 				gain.setValueAtTime(this.trackNotes[track].currentVolume / 100, time - 0.002);
 				gain.linearRampToValueAtTime(0, time);
 				this.trackNotes[track].source.stop(time + 0.02);
@@ -1412,51 +1429,51 @@ export class Tracker {
 	}
 
 	applyAutoVibrato(trackNote, currentPeriod) {
-
-		var instrument = this.getInstrument(trackNote.instrumentIndex);
+		const instrument = this.getInstrument(trackNote.instrumentIndex);
 		if (instrument) {
-			var _freq = -instrument.vibrato.rate / 40;
-			var _amp = instrument.vibrato.depth / 8;
-			if (this.useLinearFrequency) _amp *= 4;
+			const _freq = -instrument.vibrato.rate / 40;
+			let _amp = instrument.vibrato.depth / 8;
+			if (this.useLinearFrequency) {
+				_amp *= 4;
+			}
 			trackNote.vibratoTimer = trackNote.vibratoTimer || 0;
 
 			if (instrument.vibrato.sweep && trackNote.vibratoTimer < instrument.vibrato.sweep) {
-				var sweepAmp = 1 - ((instrument.vibrato.sweep - trackNote.vibratoTimer) / instrument.vibrato.sweep);
+				const sweepAmp = 1 - ((instrument.vibrato.sweep - trackNote.vibratoTimer) / instrument.vibrato.sweep);
 				_amp *= sweepAmp;
 			}
-			var instrumentVibratoFunction = instrument.getAutoVibratoFunction();
-			var targetPeriod = instrumentVibratoFunction(currentPeriod, trackNote.vibratoTimer, _freq, _amp);
+			const instrumentVibratoFunction = instrument.getAutoVibratoFunction();
+			const targetPeriod = instrumentVibratoFunction(currentPeriod, trackNote.vibratoTimer, _freq, _amp);
 			trackNote.vibratoTimer++;
-			return targetPeriod
+
+			return targetPeriod;
 		}
+
 		return currentPeriod;
 	}
 
 	applyEffects(track, time) {
+		const trackNote = this.trackNotes[track];
+		const effects = trackNote.effects;
+		let value;
+		let autoVibratoHandled = false;
 
-		var trackNote = this.trackNotes[track];
-		var effects = trackNote.effects;
-
-		if (!trackNote) return;
-		if (!effects) return;
-
-		var value;
-		var autoVibratoHandled = false;
+		if (!trackNote) { return; }
+		if (!effects) { return; }
 
 		trackNote.startVibratoTimer = trackNote.vibratoTimer || 0;
 
 		if (trackNote.resetPeriodOnStep && trackNote.source) {
 			// vibrato or arpeggio is done
 			// for slow vibratos it seems logical to keep the current frequency, but apparently most trackers revert back to the pre-vibrato one
-			var targetPeriod = trackNote.currentPeriod || trackNote.startPeriod;
+			const targetPeriod = trackNote.currentPeriod || trackNote.startPeriod;
 			this.setPeriodAtTime(trackNote, targetPeriod, time);
 			trackNote.resetPeriodOnStep = false;
 		}
 
 		if (effects.volume) {
-			var volume = effects.volume.value;
+			const volume = effects.volume.value;
 			if (trackNote.volume) {
-				//trackNote.startVolume = volume; // apparently the startVolume is not set here but the default volume of the note is used?
 				trackNote.volume.gain.setValueAtTime(volume / 100, time);
 			}
 			trackNote.currentVolume = volume;
@@ -1472,8 +1489,8 @@ export class Tracker {
 
 		if (effects.fade) {
 			value = effects.fade.value;
-			var currentVolume;
-			var startTick = 1;
+			let currentVolume;
+			let startTick = 1;
 
 			if (effects.fade.resetOnStep) {
 				currentVolume = trackNote.startVolume;
@@ -1481,14 +1498,14 @@ export class Tracker {
 				currentVolume = trackNote.currentVolume;
 			}
 
-			var steps = this.ticksPerStep;
+			let steps = this.ticksPerStep;
 			if (effects.fade.fine) {
 				// fine Volume Up or Down
 				startTick = 0;
 				steps = 1;
 			}
 
-			for (var tick = startTick; tick < steps; tick++) {
+			for (let tick = startTick; tick < steps; tick++) {
 				if (trackNote.volume) {
 					trackNote.volume.gain.setValueAtTime(currentVolume / 100, time + (tick * this.tickTime));
 					currentVolume += value;
@@ -1498,37 +1515,34 @@ export class Tracker {
 			}
 
 			trackNote.currentVolume = currentVolume;
-
 		}
 
 		if (effects.slide) {
 			if (trackNote.source) {
-				var currentPeriod = trackNote.currentPeriod || trackNote.startPeriod;
-				var targetPeriod = currentPeriod;
+				const currentPeriod = trackNote.currentPeriod || trackNote.startPeriod;
+				const slideValue = this.inFTMode() && this.useLinearFrequency ? effects.slide.value * 4 : effects.slide.value;
+				let targetPeriod = currentPeriod;
+				let steps = this.ticksPerStep;
 
-
-				var steps = this.ticksPerStep;
 				if (effects.slide.fine) {
 					// fine Slide Up or Down
 					steps = 2;
 				}
 
-
-				var slideValue = effects.slide.value;
-				if (this.inFTMode() && this.useLinearFrequency) slideValue = effects.slide.value * 4;
 				value = Math.abs(slideValue);
 
 				if (this.inFTMode() && effects.slide.resetVolume && (trackNote.volumeFadeOut || trackNote.volumeEnvelope)) {
 					// crap ... this should reset the volume envelope to the beginning ... annoying ...
-					var instrument = this.getInstrument(trackNote.instrumentIndex);
-					if (instrument) instrument.resetVolume(time, trackNote);
-
+					const instrument = this.getInstrument(trackNote.instrumentIndex);
+					if (instrument) {
+						instrument.resetVolume(time, trackNote);
+					}
 				}
 
 				trackNote.vibratoTimer = trackNote.startVibratoTimer;
 
 				// TODO: Why don't we use a RampToValueAtTime here ?
-				for (var tick = 1; tick < steps; tick++) {
+				for (let tick = 1; tick < steps; tick++) {
 					if (effects.slide.target) {
 						this.trackEffectCache[track].defaultSlideTarget = effects.slide.target;
 						if (targetPeriod < effects.slide.target) {
@@ -1545,9 +1559,11 @@ export class Tracker {
 						}
 					}
 
-					if (!this.inFTMode()) targetPeriod = this.audio.limitAmigaPeriod(targetPeriod);
+					if (!this.inFTMode()) {
+						targetPeriod = this.audio.limitAmigaPeriod(targetPeriod);
+					}
 
-					var newPeriod = targetPeriod;
+					let newPeriod = targetPeriod;
 					if (effects.slide.canUseGlissando && this.trackEffectCache[track].glissando) {
 						newPeriod = this.audio.getNearestSemiTone(targetPeriod, trackNote.instrumentIndex);
 					}
@@ -1556,7 +1572,7 @@ export class Tracker {
 						trackNote.currentPeriod = targetPeriod;
 
 						if (trackNote.hasAutoVibrato && this.inFTMode()) {
-							targetPeriod = applyAutoVibrato(trackNote, targetPeriod);
+							targetPeriod = this.applyAutoVibrato(trackNote, targetPeriod);
 							autoVibratoHandled = true;
 						}
 
@@ -1568,46 +1584,52 @@ export class Tracker {
 
 		if (effects.arpeggio) {
 			if (trackNote.source) {
-
-				var currentPeriod = trackNote.currentPeriod || trackNote.startPeriod;
-				var targetPeriod;
+				const currentPeriod = trackNote.currentPeriod || trackNote.startPeriod;
+				let targetPeriod;
 
 				trackNote.resetPeriodOnStep = true;
 				trackNote.vibratoTimer = trackNote.startVibratoTimer;
 
-				for (var tick = 0; tick < this.ticksPerStep; tick++) {
-					var t = tick % 3;
+				for (let tick = 0; tick < this.ticksPerStep; tick++) {
+					const t = tick % 3;
 
-					if (t == 0) targetPeriod = currentPeriod;
-					if (t == 1 && effects.arpeggio.interval1) targetPeriod = currentPeriod - effects.arpeggio.interval1;
-					if (t == 2 && effects.arpeggio.interval2) targetPeriod = currentPeriod - effects.arpeggio.interval2;
+					if (t == 0) {
+						targetPeriod = currentPeriod;
+					}
+
+					if (t == 1 && effects.arpeggio.interval1) {
+						targetPeriod = currentPeriod - effects.arpeggio.interval1;
+					}
+
+					if (t == 2 && effects.arpeggio.interval2) {
+						targetPeriod = currentPeriod - effects.arpeggio.interval2;
+					}
 
 					if (trackNote.hasAutoVibrato && this.inFTMode()) {
-						targetPeriod = applyAutoVibrato(trackNote, targetPeriod);
+						targetPeriod = this.applyAutoVibrato(trackNote, targetPeriod);
 						autoVibratoHandled = true;
 					}
 
 					this.setPeriodAtTime(trackNote, targetPeriod, time + (tick * this.tickTime));
-
 				}
 			}
 		}
 
 		if (effects.vibrato || (trackNote.hasAutoVibrato && !autoVibratoHandled)) {
 			effects.vibrato = effects.vibrato || { freq: 0, amplitude: 0 };
-			var freq = effects.vibrato.freq;
-			var amp = effects.vibrato.amplitude;
-			if (this.inFTMode() && this.useLinearFrequency) amp *= 4;
+
+			const freq = effects.vibrato.freq;
+			const amp = this.inFTMode() && this.useLinearFrequency ? effects.vibrato.amplitude * 4 : effects.vibrato.amplitude;
 
 			trackNote.vibratoTimer = trackNote.vibratoTimer || 0;
 
 			if (trackNote.source) {
 				trackNote.resetPeriodOnStep = true;
-				currentPeriod = trackNote.currentPeriod || trackNote.startPeriod;
+				const currentPeriod = trackNote.currentPeriod || trackNote.startPeriod;
 
 				trackNote.vibratoTimer = trackNote.startVibratoTimer;
-				for (var tick = 0; tick < this.ticksPerStep; tick++) {
-					targetPeriod = this.vibratoFunction(currentPeriod, trackNote.vibratoTimer, freq, amp);
+				for (let tick = 0; tick < this.ticksPerStep; tick++) {
+					let targetPeriod = this.vibratoFunction(currentPeriod, trackNote.vibratoTimer, freq, amp);
 
 					// should we add or average the 2 effects?
 					if (trackNote.hasAutoVibrato && this.inFTMode()) {
@@ -1619,63 +1641,66 @@ export class Tracker {
 
 					// TODO: if we ever allow multiple effect on the same tick then we should rework this as you can't have concurrent 'setPeriodAtTime' commands
 					this.setPeriodAtTime(trackNote, targetPeriod, time + (tick * this.tickTime));
-
 				}
 			}
 		}
 
 		if (effects.tremolo) {
-			var freq = effects.tremolo.freq;
-			var amp = effects.tremolo.amplitude;
+			const freq = effects.tremolo.freq;
+			const amp = effects.tremolo.amplitude;
 
 			trackNote.tremoloTimer = trackNote.tremoloTimer || 0;
 
 			if (trackNote.volume) {
-				var _volume = trackNote.startVolume;
+				let _volume = trackNote.startVolume;
 
-				for (var tick = 0; tick < this.ticksPerStep; tick++) {
+				for (let tick = 0; tick < this.ticksPerStep; tick++) {
 
 					_volume = this.tremoloFunction(_volume, trackNote.tremoloTimer, freq, amp);
 
-					if (_volume < 0) _volume = 0;
-					if (_volume > 100) _volume = 100;
+					if (_volume < 0) {
+						_volume = 0;
+					}
+
+					if (_volume > 100) {
+						_volume = 100;
+					}
 
 					trackNote.volume.gain.setValueAtTime(_volume / 100, time + (tick * this.tickTime));
 					trackNote.currentVolume = _volume;
 					trackNote.tremoloTimer++;
 				}
 			}
-
 		}
 
 		if (effects.cutNote) {
 			if (trackNote.volume) {
 				trackNote.volume.gain.setValueAtTime(0, time + (effects.cutNote.value * this.tickTime));
 			}
+
 			trackNote.currentVolume = 0;
 		}
 
 		if (effects.reTrigger) {
-			var instrumentIndex = trackNote.instrumentIndex;
-			var notePeriod = trackNote.startPeriod;
+			const instrumentIndex = trackNote.instrumentIndex;
+			const notePeriod = trackNote.startPeriod;
 			volume = trackNote.startVolume;
-			var noteIndex = trackNote.noteIndex;
+			const noteIndex = trackNote.noteIndex;
+			const triggerStep = effects.reTrigger.value || 1;
+			let triggerCount = triggerStep;
 
-			var triggerStep = effects.reTrigger.value || 1;
-			var triggerCount = triggerStep;
 			while (triggerCount < this.ticksPerStep) {
-				var triggerTime = time + (triggerCount * this.tickTime);
+				const triggerTime = time + (triggerCount * this.tickTime);
 				this.cutNote(track, triggerTime);
 				this.trackNotes[track] = this.audio.playSample(instrumentIndex, notePeriod, volume, track, effects, triggerTime, noteIndex);
 				triggerCount += triggerStep;
 			}
 		}
-
 	}
 
 	setBPM(newBPM) {
 		console.log('set BPM: ' + this.bpm + ' to ' + newBPM);
-		if (clock) clock.timeStretch(this.audio.context.currentTime, [this.mainTimer], this.bpm / newBPM);
+		if (this.clock) this.clock.timeStretch(this.audio.context.currentTime, [this.mainTimer], this.bpm / newBPM);
 		this.bpm = newBPM;
 		this.tickTime = 2.5 / this.bpm;
 		events.emit(EVENT.songBPMChange, this.bpm);
@@ -1706,7 +1731,7 @@ export class Tracker {
 	setPatternLength(value) {
 		this.patternLength = value;
 
-		var currentLength = this.song.patterns[this.currentPattern].length;
+		const currentLength = this.song.patterns[this.currentPattern].length;
 		if (currentLength === this.patternLength) return;
 
 		if (currentLength < this.patternLength) {
@@ -1767,23 +1792,18 @@ export class Tracker {
 	}
 
 	setPeriodAtTime(trackNote, period, time) {
-		// TODO: shouldn't we always set the full samplerate from the period?
-
+		let rate;
 		period = Math.max(period, 1);
 
 		if (this.inFTMode() && this.useLinearFrequency) {
-			var sampleRate = (8363 * Math.pow(2, ((4608 - period) / 768)));
-			var rate = sampleRate / this.audio.context.sampleRate;
+			const sampleRate = (8363 * Math.pow(2, ((4608 - period) / 768)));
+			rate = sampleRate / this.audio.context.sampleRate;
 		} else {
 			rate = (trackNote.startPeriod / period);
 			rate = trackNote.startPlaybackRate * rate;
 		}
 
-		// note - seems to be a weird bug in chrome ?
-		// try setting it twice with a slight delay
-		// TODO: retest on Chrome windows and other browsers
 		trackNote.source.playbackRate.setValueAtTime(rate, time);
-		trackNote.source.playbackRate.setValueAtTime(rate, time + 0.005);
 	}
 
 	load(url, skipHistory, next) {
@@ -1801,11 +1821,6 @@ export class Tracker {
 			skipHistory = true;
 			this.processFile(url.buffer || url, name);
 		}
-	}
-
-	processFileCallback(isMod, next) {
-		if (isMod) this.checkAutoPlay(skipHistory);
-		if (next) next();
 	}
 
 	checkAutoPlay(play) {
@@ -1907,8 +1922,8 @@ export class Tracker {
 
 		this.song.patterns.push(this.getEmptyPattern());
 
-		var patternTable = [];
-		for (var i = 0; i < 128; ++i) {
+		const patternTable = [];
+		for (let i = 0; i < 128; ++i) {
 			patternTable[i] = 0;
 		}
 		this.song.patternTable = patternTable;
