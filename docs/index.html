@@ -15,6 +15,17 @@
 			#player button {
 				margin: 15px 0;
 			}
+
+			#instruments li {
+				font-weight: bold;
+				background-color: transparent;
+				transition: background-color 0.75s;
+			}
+
+			#instruments li.playing {
+				background-color: red;
+				transition-duration: 0s;
+			}
 		</style>
 	</head>
 
@@ -104,9 +115,26 @@
 				} else {
 					let startTime = null;
 
-					// hook into every event
-					for (const {event, value} of PasuunaPlayer.EVENT) {
-						console.log(event);
+					// hook into every event as a demo
+					for (const key in PasuunaPlayer.EVENT) {
+						if (PasuunaPlayer.EVENT.hasOwnProperty(key)) {
+							tracker.events.on(PasuunaPlayer.EVENT[key], (data) => {
+
+								// on sample play, do something special
+								if (key === 'samplePlay') {
+									const sample = instrumentsContainer.querySelector(`.list-group-item[index="${data.instrumentIndex}"]`);
+									if (sample) {
+										sample.classList.add('playing');
+										setTimeout(() => {
+											sample.classList.remove('playing');
+										}, 20);
+									}
+								} else {
+									// otherwise just log them
+									console.log('event', key, data);
+								}
+							});
+						}
 					}
 
 					tracker.events.on(PasuunaPlayer.EVENT.songLoaded, (song) => {
@@ -125,10 +153,10 @@
 						song.instruments.forEach(instrument => {
 							const listItem = document.createElement('li');
 							listItem.classList.add(['list-group-item']);
+							listItem.setAttribute('index', instrument.instrumentIndex);
 							listItem.innerHTML = `${instrument.instrumentIndex}. ${instrument.name.trim()}`;
 							instrumentsContainer.querySelector('ul').appendChild(listItem);
 						});
-
 					});
 
 					for (const listItem of playlist.querySelectorAll('li')) {
@@ -142,7 +170,6 @@
 						togglePlay();
 					};
 
-					// setup progress bar to seek into the song
 					volumeBar.oninput = volumeBar.onchange = () => {
 						tracker.audio.masterVolume.gain.cancelScheduledValues(0);
 						tracker.audio.masterVolume.gain.setValueAtTime(volumeBar.value / 100, 0);
@@ -153,7 +180,7 @@
 						if (tracker.isPlaying) {
 							tracker.stop();
 						}
-						songName.innerHTML = " 🔃 Loading ...";
+						songName.innerHTML = "🔃 Loading ...";
 						tracker.load(url);
 					};
 
