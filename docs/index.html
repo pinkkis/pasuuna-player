@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 	<head>
 		<title>Pasuuna player demo</title>
 		<meta charset="UTF-8">
@@ -13,77 +12,75 @@
 				color: green;
 			}
 
-			.container {
-				padding-top: 1em;
-			}
-
 			#player button {
 				margin: 15px 0;
 			}
 		</style>
 	</head>
 
-	<body class="container">
-
-		<div class="row">
-			<div class="col">
-				<h1>Pasuuna Player Standalone Demo</h1>
+	<body>
+		<div class="container pt-3">
+			<div class="row">
+				<div class="col">
+					<h1>Pasuuna Player Standalone Demo</h1>
+				</div>
 			</div>
-		</div>
 
-		<div class="row">
-			<div class="col-4">
-				<div class="card" id="player">
-					<h5 class="card-header">Player</h5>
-					<div class="card-body">
-						<h5 class="card-title" id="songname">No Song Loaded</h5>
-						<h6 class="card-subtitle" id="songdetails"></h6>
+			<div class="row mt-3">
+				<div class="col-4">
+					<div class="card" id="player">
+						<h5 class="card-header">Player</h5>
+						<div class="card-body">
+							<h5 class="card-title" id="songname">No Song Loaded</h5>
+							<h6 class="card-subtitle" id="songdetails"></h6>
 
-						<p><button class="btn btn-primary btn-xs btn-block" id="play" disabled>Play</button></p>
+							<p><button class="btn btn-primary btn-xs btn-block" id="play" disabled>Play</button></p>
 
-						<form>
-							<div class="form-group">
-								<label for="volume">Volume</label>
-								<input id="volume" class="form-control-range" type="range" min="0" max="100" value="70">
-							</div>
-						</form>
+							<form>
+								<div class="form-group">
+									<label for="volume">Volume</label>
+									<input id="volume" class="form-control-range" type="range" min="0" max="100"
+										value="70">
+								</div>
+							</form>
 
+						</div>
+					</div>
+				</div>
+
+				<div class="col-8">
+					<div class="card">
+						<h5 class="card-header">Playlist</h5>
+						<ul id="playlist" class="list-group list-group-flush">
+							<li class="list-group-item"
+								data-url="https://api.modarchive.org/downloads.php?moduleid=42560#GSLINGER.MOD">
+								Guitar Slinger (MOD - ProTracker)
+							</li>
+							<li class="list-group-item"
+								data-url="https://api.modarchive.org/downloads.php?moduleid=57925#space_debris.mod">
+								Space Debris (MOD - ProTracker)
+							</li>
+							<li class="list-group-item"
+								data-url="https://api.modarchive.org/downloads.php?moduleid=35280#DEADLOCK.XM">
+								Deadlock (XM - FastTracker)
+							</li>
+						</ul>
+						<div class="card-body">
+							<footer class="blockquote-footer">
+								Songs downloaded from The Mod Archive. Used under their <a
+									href="https://modarchive.org/index.php?terms-upload">license</a> for demo purposes.
+							</footer>
+						</div>
 					</div>
 				</div>
 			</div>
 
-			<div class="col-8">
-				<div class="card">
-					<h5 class="card-header">Playlist</h5>
-					<ul id="playlist" class="list-group list-group-flush">
-						<li class="list-group-item"
-							data-url="https://api.modarchive.org/downloads.php?moduleid=42560#GSLINGER.MOD">
-							Guitar Slinger (MOD - ProTracker)
-						</li>
-						<li class="list-group-item"
-							data-url="https://api.modarchive.org/downloads.php?moduleid=57925#space_debris.mod">
-							Space Debris (MOD - ProTracker)
-						</li>
-						<li class="list-group-item"
-							data-url="https://api.modarchive.org/downloads.php?moduleid=35280#DEADLOCK.XM">
-							Deadlock (XM - FastTracker)
-						</li>
-					</ul>
-					<div class="card-body">
-						<footer class="blockquote-footer">
-							Songs downloaded from The Mod Archive. Used under their <a
-								href="https://modarchive.org/index.php?terms-upload">license</a> for demo purposes.
-						</footer>
+			<div class="row mt-3">
+				<div class="col">
+					<div class="card" id="instruments">
+						<h5 class="card-header">Instruments</h5>
+						<ul class="list-group list-group-flush"></ul>
 					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row mt-3">
-			<div class="col">
-				<div class="card" id="instruments">
-					<h5 class="card-header">Instruments</h5>
-					<ul class="list-group list-group-flush"></ul>
 				</div>
 			</div>
 		</div>
