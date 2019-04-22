@@ -20,6 +20,7 @@ export class Tracker {
 	constructor(audioContext = null) {
 		this.events = events;
 		this.audio = new Audio(this, audioContext);
+		this.externalAudioContext = audioContext !== null;
 		this.detector = new FileDetector(this);
 		this.useLinearFrequency = true;
 
@@ -119,6 +120,7 @@ export class Tracker {
 
 		this.useLinearFrequency = false;
 		this.setTrackerMode(TRACKERMODE.PROTRACKER);
+
 		this.audio.setMasterVolume(1);
 		this.audio.setAmigaLowPassFilter(false, 0);
 	}
@@ -169,7 +171,11 @@ export class Tracker {
 			this.song.patterns[this.currentPattern] = this.currentPatternData;
 		}
 		this.patternLength = this.currentPatternData.length;
-		if (this.prevPattern != this.currentPattern) events.emit(EVENT.patternChange, this.currentPattern);
+
+		if (this.prevPattern != this.currentPattern) {
+			events.emit(EVENT.patternChange, this.currentPattern);
+		}
+
 		this.prevPattern = this.currentPattern;
 	}
 
@@ -192,7 +198,10 @@ export class Tracker {
 
 	setCurrentPatternPos(index) {
 		this.currentPatternPos = index;
-		if (this.prevPatternPos != this.currentPatternPos) events.emit(EVENT.patternPosChange, { current: this.currentPatternPos, prev: this.prevPatternPos });
+		if (this.prevPatternPos != this.currentPatternPos) {
+			events.emit(EVENT.patternPosChange, { current: this.currentPatternPos, prev: this.prevPatternPos });
+		}
+
 		this.prevPatternPos = this.currentPatternPos;
 	}
 
@@ -237,45 +246,6 @@ export class Tracker {
 		}
 	}
 
-	addToPatternTable(index, patternIndex) {
-		if (typeof index == 'undefined') {
-			index = this.song.length;
-		}
-
-		this.patternIndex = patternIndex || 0;
-
-		if (index == song.length) {
-			this.song.patternTable[index] = patternIndex;
-			this.song.length++;
-		} else {
-			// TODO: insert pattern;
-		}
-
-		events.emit(EVENT.songPropertyChange, this.song);
-		events.emit(EVENT.patternTableChange);
-	}
-
-	removeFromPatternTable(index) {
-		if (this.song.length < 2) return;
-		if (typeof index == 'undefined') {
-			index = this.song.length - 1;
-		}
-
-		if (index == this.song.length - 1) {
-			this.song.patternTable[index] = 0;
-			this.song.length--;
-		} else {
-			// TODO: remove pattern and shift other patterns up;
-		}
-
-		if (this.currentSongPosition == this.song.length) {
-			this.setCurrentSongPosition(this.currentSongPosition - 1);
-		}
-
-		events.emit(EVENT.songPropertyChange, this.song);
-		events.emit(EVENT.patternTableChange);
-	}
-
 	setPlayType(playType) {
 		this.currentPlayType = playType;
 		events.emit(EVENT.playTypeChange, this.currentPlayType);
@@ -290,7 +260,7 @@ export class Tracker {
 		this.audio.checkState();
 		this.setPlayType(PLAYTYPE.song);
 		this.isPlaying = true;
-		this.playPattern(this.currentPattern);
+		this.playPatternIndex(this.currentPattern);
 		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
@@ -300,14 +270,18 @@ export class Tracker {
 		this.currentPatternPos = 0;
 		this.setPlayType(PLAYTYPE.pattern);
 		this.isPlaying = true;
-		playPattern(this.currentPattern);
+		this.playPatternIndex(this.currentPattern);
 		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
 	stop() {
-		if (this.clock) this.clock.stop();
+		if (this.clock) {
+			this.clock.stop();
+		}
+
 		this.audio.disable();
 		this.audio.setMasterVolume(1);
+
 		this.clearEffectsCache();
 
 		for (let i = 0; i < this.trackCount; i++) {
@@ -350,12 +324,13 @@ export class Tracker {
 		}
 	}
 
-	playPattern(patternIndex) {
+	playPatternIndex(patternIndex) {
 		this.patternIndex = this.patternIndex || 0;
 
 		this.clock = this.clock || new WAAClock(this.audio.context);
 		this.clock.start();
-		this.audio.enable(); // TODO: if external audio context, don't turn it off
+		this.audio.enable();
+
 		this.patternLoopStart = [];
 		this.patternLoopCount = [];
 
@@ -366,17 +341,18 @@ export class Tracker {
 
 		// look-ahead playback - far less demanding, works OK on mobile devices
 		let p = 0;
-		let time = this.audio.context.currentTime + 0.1; //  add small delay to allow some time to render the first notes before playing
+		let time = this.audio.context.currentTime + 0.1; // add small delay to allow some time to render the first notes before playing
 
 		// start with a small delay then make it longer
 		// this is because Chrome on Android doesn't start playing until the first batch of scheduling is done?
-		let delay = 0.2;
-		const playingDelay = 1;
+		let delay = SETTINGS.playbackDelayStart;
+		const playingDelay = SETTINGS.playbackDelay;
 
 		let playPatternData = this.currentPatternData;
 		let playSongPosition = this.currentSongPosition;
 		this.trackerStates = [];
 
+		this.events.emit(EVENT.patternChange, {patternIndex: patternIndex, pattern: this.currentPatternData});
 		this.mainTimer = this.clock.setTimeout(function (event) {
 
 			if (p > 1) {
@@ -433,8 +409,10 @@ export class Tracker {
 							let nextPosition = stepResult.positionBreak ? stepResult.targetSongPosition : ++playSongPosition;
 							if (nextPosition >= this.song.length) {
 								nextPosition = this.song.restartPosition ? this.song.restartPosition - 1 : 0;
+								this.events.emit(EVENT.songRestart, nextPosition);
 							}
 							if (nextPosition >= this.song.length) {
+								this.events.emit(EVENT.songRestart, nextPosition);
 								nextPosition = 0;
 							}
 
@@ -442,9 +420,10 @@ export class Tracker {
 							patternIndex = this.song.patternTable[playSongPosition];
 							playPatternData = this.song.patterns[patternIndex];
 
+							this.events.emit(EVENT.patternChange, {patternIndex: patternIndex, pattern: playPatternData});
 							// some invalid(?) XM files have non-existent patterns in their song list - eg. cybernautic_squierl.xm
 							if (!playPatternData) {
-								playPatternData = getEmptyPattern();
+								playPatternData = this.getEmptyPattern();
 								this.song.patterns[patternIndex] = playPatternData;
 							}
 
@@ -458,7 +437,7 @@ export class Tracker {
 						} else {
 							if (stepResult.patternBreak) {
 								p = stepResult.targetPatternPosition || 0;
-								if (p > patternLength) {
+								if (p > thisPatternLength) {
 									p = 0;
 								}
 							}
@@ -1218,6 +1197,7 @@ export class Tracker {
 								result.targetPatternPosition = this.patternLoopStart[track] || 0; // should we default to 0 if no start was set or just ignore?
 
 								console.log('looping to ' + result.targetPatternPosition + ' for ' + this.patternLoopCount[track] + '/' + subValue);
+								this.events.emit(EVENT.patternLoopChange, {target: result.targetPatternPosition, count: this.patternLoopCount[track]});
 							} else {
 								this.patternLoopCount[track] = 0;
 							}
@@ -1394,7 +1374,6 @@ export class Tracker {
 			//trackNotes[track] = this.audio.playSample(instrumentIndex,notePeriod,volume,track,trackEffects,time,noteIndex);
 			this.trackEffectCache[track].defaultSlideTarget = this.trackNotes[track].startPeriod;
 		}
-
 
 		if (instrumentIndex) {
 			this.trackNotes[track].currentInstrument = instrumentIndex;
@@ -1904,40 +1883,11 @@ export class Tracker {
 		return this.trackerMode === TRACKERMODE.FASTTRACKER
 	}
 
-	newSong() {
-		resetDefaultSettings();
-		this.song = {
-			patterns: [],
-			instruments: []
-		};
-		this.clearInstruments(31);
-
-		this.song.typeId = 'M.K.';
-		this.song.title = 'new song';
-		this.song.length = 1;
-		this.song.restartPosition = 0;
-
-		this.song.patterns.push(this.getEmptyPattern());
-
-		const patternTable = [];
-		for (let i = 0; i < 128; ++i) {
-			patternTable[i] = 0;
-		}
-		this.song.patternTable = patternTable;
-
-		onModuleLoad();
-	};
-
-
 	clearInstrument() {
 		this.instruments[this.currentInstrumentIndex] = new Instrument(this);
 		events.emit(EVENT.instrumentChange, this.currentInstrumentIndex);
 		events.emit(EVENT.instrumentNameChange, this.currentInstrumentIndex);
 	};
-
-	getFileName() {
-		return song.filename || (song.title ? song.title.replace(/ /g, '-').replace(/\W/g, '') + '.mod' : 'new.mod');
-	}
 
 	getEmptyPattern() {
 		const result = [];

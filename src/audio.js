@@ -30,7 +30,6 @@ export class Audio {
 		this.scheduledNotes = [[], [], []];
 		this.scheduledNotesBucket = 0;
 		this.prevSampleRate = 4143.569;
-		this.isRendering = false;
 		this.filters = {
 			volume: true,
 			panning: true,
@@ -90,7 +89,7 @@ export class Audio {
 	init(actx) {
 		actx = actx || this.audioContext;
 		if (!actx) {
-			console.warn('No audioContext');
+			console.error('No audioContext');
 			return;
 		} else {
 			this.context = actx;
@@ -110,26 +109,25 @@ export class Audio {
 			this.addFilterChain();
 		}
 
-		if (!this.isRendering) {
-			events.on(EVENT.trackStateChange, (state) => {
-				if (typeof state.track !== 'undefined' && this.filterChains[state.track]) {
-					this.filterChains[state.track].volumeValue(state.mute ? 0 : 70);
-				}
-			});
+		events.on(EVENT.trackStateChange, (state) => {
+			if (typeof state.track !== 'undefined' && this.filterChains[state.track]) {
+				this.filterChains[state.track].volumeValue(state.mute ? 0 : 70);
+			}
+		});
 
-			events.on(EVENT.trackCountChange, (trackCount) => {
-				for (let i = this.filterChains.length; i < trackCount; i++) {
-					this.addFilterChain();
-				}
+		events.on(EVENT.trackCountChange, (trackCount) => {
+			for (let i = this.filterChains.length; i < trackCount; i++) {
+				this.addFilterChain();
+			}
 
-				events.emit(EVENT.filterChainCountChange, trackCount);
-				this.setStereoSeparation(this.currentStereoSeparation);
-			});
+			events.emit(EVENT.filterChainCountChange, trackCount);
+			this.setStereoSeparation(this.currentStereoSeparation);
+		});
 
-			events.on(EVENT.trackerModeChanged, (mode) => {
-				this.setStereoSeparation(/*mode*/);
-			});
-		}
+		events.on(EVENT.trackerModeChanged, (mode) => {
+			this.setStereoSeparation(/*mode*/);
+		});
+
 	};
 
 	enable() {
@@ -165,13 +163,8 @@ export class Audio {
 
 
 	playSample(index, period, volume, track, effects, time, noteIndex) {
-		let audioContext;
-		if (this.isRendering) {
-			audioContext = this.offlineContext;
-		} else {
-			audioContext = this.audioContext;
-			this.enable();
-		}
+		let audioContext = this.audioContext;
+		this.enable();
 
 		period = period || 428; // C-3
 		if (typeof track === 'undefined') {
@@ -223,7 +216,10 @@ export class Audio {
 			if (instrument.sample.data.length) {
 				sampleLength = instrument.sample.data.length;
 				if (effects && effects.offset) {
-					if (effects.offset.value >= sampleLength) effects.offset.value = sampleLength - 1;
+					if (effects.offset.value >= sampleLength) {
+						effects.offset.value = sampleLength - 1;
+					}
+
 					offset = effects.offset.value / audioContext.sampleRate; // in seconds
 				}
 				// note - on safari you can't set a different samplerate?
@@ -254,7 +250,6 @@ export class Audio {
 					// in seconds ...
 					source.loopStart = instrument.sample.loop.start / audioContext.sampleRate;
 					source.loopEnd = (instrument.sample.loop.start + instrument.sample.loop.length) / audioContext.sampleRate;
-					//audioContext.sampleRate = samples/second
 				}
 			}
 
@@ -277,7 +272,6 @@ export class Audio {
 				scheduled = envelopes.scheduled;
 
 				target.connect(volumeGain);
-
 			} else {
 				source.connect(volumeGain);
 			}
@@ -325,9 +319,7 @@ export class Audio {
 
 			this.scheduledNotes[this.scheduledNotesBucket].push(volumeGain);
 
-			if (!this.isRendering) {
-				events.emit(EVENT.samplePlay, result);
-			}
+			events.emit(EVENT.samplePlay, result);
 
 			return result;
 		}
@@ -356,33 +348,6 @@ export class Audio {
 			source.connect(this.masterVolume);
 			source.start();
 		}
-	};
-
-	startRendering(length) {
-		this.isRendering = true;
-
-		console.log('startRendering ' + length);
-		this.offlineContext = new OfflineAudioContext(2, 44100 * length, 44100);
-		this.context = this.offlineContext;
-		this.init(this.offlineContext);
-	};
-
-	stopRendering(next) {
-		this.isRendering = false;
-
-		this.offlineContext.startRendering()
-			.then((renderedBuffer) => {
-				console.log('Rendering completed successfully');
-				if (next) next(renderedBuffer);
-			}).catch((err) => {
-				console.log('Rendering failed: ' + err);
-				// Note: The promise should reject when startRendering is called a second time on an OfflineAudioContext
-			});
-
-		// switch back to online Audio context;
-		this.context = this.audioContext;
-		this.createAudioConnections(this.context);
-		this.init(this.context);
 	};
 
 	setStereoSeparation(value) {

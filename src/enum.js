@@ -3,11 +3,12 @@ export const EVENT = {
 	patternChange: 2,
 	patternPosChange: 3,
 	patternTableChange: 4,
+	patternLoopChange: 5,
 	trackStateChange: 7,
 	playingChange: 8,
 	playTypeChange: 9,
 	songPositionChange: 10,
-	// songSpeedChange: 11,
+	songRestart: 11,
 	songBPMChange: 12,
 	samplePlay: 13,
 	songPropertyChange: 16,
@@ -55,7 +56,6 @@ export const LOOPTYPE = {
 	FORWARD: 1,
 	PINGPONG: 2
 };
-
 
 // Amiga Frequency
 //export const PALFREQUENCY = 7093789.2;
@@ -272,5 +272,7 @@ export const SETTINGS = {
 	unrollShortLoops: false,
 	sustainKeyboardNotes: false,
 	stereoSeparation: STEREOSEPARATION.BALANCED,
-	emulateProtracker1OffsetBug: true
+	emulateProtracker1OffsetBug: true,
+	playbackDelay: 0.05,
+	playbackDelayStart: 0.02,
 };

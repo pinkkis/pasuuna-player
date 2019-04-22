@@ -29,16 +29,16 @@
 			<div class="row mt-3">
 				<div class="col-4">
 					<div class="card" id="player">
-						<h5 class="card-header">Player</h5>
+						<h5 class="card-header">💿 Player</h5>
 						<div class="card-body">
 							<h5 class="card-title" id="songname">No Song Loaded</h5>
 							<h6 class="card-subtitle" id="songdetails"></h6>
 
-							<p><button class="btn btn-primary btn-xs btn-block" id="play" disabled>Play</button></p>
+							<p><button class="btn btn-primary btn-xs btn-block" id="play" disabled>▶ Play</button></p>
 
 							<form>
 								<div class="form-group">
-									<label for="volume">Volume</label>
+									<label for="volume">🔊 Volume</label>
 									<input id="volume" class="form-control-range" type="range" min="0" max="100"
 										value="70">
 								</div>
@@ -50,19 +50,19 @@
 
 				<div class="col-8">
 					<div class="card">
-						<h5 class="card-header">Playlist</h5>
+						<h5 class="card-header">📃 Playlist</h5>
 						<ul id="playlist" class="list-group list-group-flush">
 							<li class="list-group-item"
 								data-url="https://api.modarchive.org/downloads.php?moduleid=42560#GSLINGER.MOD">
-								Guitar Slinger (MOD - ProTracker)
+								🎶 Guitar Slinger (MOD - ProTracker)
 							</li>
 							<li class="list-group-item"
 								data-url="https://api.modarchive.org/downloads.php?moduleid=57925#space_debris.mod">
-								Space Debris (MOD - ProTracker)
+								🎶 Space Debris (MOD - ProTracker)
 							</li>
 							<li class="list-group-item"
 								data-url="https://api.modarchive.org/downloads.php?moduleid=35280#DEADLOCK.XM">
-								Deadlock (XM - FastTracker)
+								🎶 Deadlock (XM - FastTracker)
 							</li>
 						</ul>
 						<div class="card-body">
@@ -78,7 +78,7 @@
 			<div class="row mt-3">
 				<div class="col">
 					<div class="card" id="instruments">
-						<h5 class="card-header">Instruments</h5>
+						<h5 class="card-header">🎹 Instruments</h5>
 						<ul class="list-group list-group-flush"></ul>
 					</div>
 				</div>
@@ -99,10 +99,15 @@
 				tracker.init();
 
 				if (!tracker.audio.context) {
-					songName.innerHTML = "Your browser does not support WebAudio.";
+					songName.innerHTML = "⛔ Your browser does not support WebAudio.";
 
 				} else {
 					let startTime = null;
+
+					// hook into every event
+					for (const {event, value} of PasuunaPlayer.EVENT) {
+						console.log(event);
+					}
 
 					tracker.events.on(PasuunaPlayer.EVENT.songLoaded, (song) => {
 						// clear old instruments
@@ -113,9 +118,9 @@
 						const songLength = song.length * patternLength;
 
 						playButton.disabled = false;
-						playButton.innerHTML = 'Play';
-						songName.innerHTML = song.title.trim();
-						songDetails.innerHTML = `Tracker Type: ${song.trackerType}<br>\nChannels: ${song.channels} - Length: ${songLength}`;
+						playButton.innerHTML = '▶ Play';
+						songName.innerHTML = '🎶 ' + song.title.trim();
+						songDetails.innerHTML = `ℹ Tracker Type: ${song.trackerType}<br>\nChannels: ${song.channels} - Length: ${songLength}`;
 
 						song.instruments.forEach(instrument => {
 							const listItem = document.createElement('li');
@@ -148,16 +153,16 @@
 						if (tracker.isPlaying) {
 							tracker.stop();
 						}
-						songName.innerHTML = "Loading ...";
+						songName.innerHTML = " 🔃 Loading ...";
 						tracker.load(url);
 					};
 
 					function togglePlay() {
 						if (!tracker.isPlaying) {
-							playButton.innerHTML = "Stop";
+							playButton.innerHTML = "⏹ Stop";
 							tracker.playSong();
 						} else {
-							playButton.innerHTML = "Play";
+							playButton.innerHTML = "▶ Play";
 							tracker.stop();
 						}
 					}
