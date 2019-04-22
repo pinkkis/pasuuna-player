@@ -1,22 +1,23 @@
 {
 	"name": "@pinkkis/pasuuna-player",
-	"version": "0.4.2",
+	"version": "0.4.3",
 	"description": "Javascript MOD player with soundtracker, protracker and fasttracker support",
 	"main": "dist/pasuunaplayer.js",
 	"scripts": {
-		"start": "http-server ./dist",
 		"build": "webpack --mode production",
 		"build:dev": "webpack --mode development",
 		"prepare": "npm run build"
 	},
 	"files": [],
+	"readme": "https://github.com/pinkkis/pasuuna-player#readme",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/pinkkis/pasuuna-player.git"
 	},
 	"keywords": [
 		"mod player",
-		"web audio"
+		"web audio",
+		"mod tracker"
 	],
 	"author": {
 		"name": "Kristian Koivisto-Kokko",
@@ -32,7 +33,7 @@
 	"bugs": {
 		"url": "https://github.com/pinkkis/pasuuna-player/issues"
 	},
-	"homepage": "https://github.com/pinkkis/pasuuna-player#readme",
+	"homepage": "https://pinkkis.github.io/pasuuna-player",
 	"devDependencies": {
 		"@babel/core": "^7.4.0",
 		"@babel/plugin-proposal-class-properties": "^7.4.0",
@@ -43,7 +44,6 @@
 		"babel-loader": "^8.0.5",
 		"babel-plugin-transform-remove-console": "^6.9.4",
 		"clean-webpack-plugin": "^2.0.1",
-		"copy-webpack-plugin": "^5.0.2",
 		"http-server": "^0.11.1",
 		"source-map-loader": "^0.2.4",
 		"terser-webpack-plugin": "^1.2.3",

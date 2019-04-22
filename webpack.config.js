@@ -1,6 +1,5 @@
 const TerserPlugin = require('terser-webpack-plugin');
 const CleanPlugin = require('clean-webpack-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, argv) => {
 	return {
@@ -27,10 +26,7 @@ module.exports = (env, argv) => {
 			]
 		},
 		plugins: [
-			new CleanPlugin(),
-			new CopyPlugin([
-				{ from: 'examples' }
-			])
+			new CleanPlugin()
 		],
 		resolve: {
 			extensions: ['.ts', '.js'],
