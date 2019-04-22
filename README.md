@@ -1,6 +1,6 @@
 # Pasuuna mod player
 
-Mod player with support for SoundTracker, ProTracker and FastTracker formats. See basic demo of it in action: https://pinkkis.github.io/pasuuna-player/index.html
+Mod player with support for SoundTracker, ProTracker and FastTracker formats. See basic demo of it in action: https://pinkkis.github.io/pasuuna-player
 
 Based on [BassoonTracker](https://github.com/steffest/BassoonTracker) by @Steffest
 
