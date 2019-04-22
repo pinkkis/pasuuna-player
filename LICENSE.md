@@ -28,7 +28,7 @@ This software uses code from [BassoonTracker](https://github.com/steffest/Bassoo
 
 ---
 
-This repository holds songs for demonstrative purposes from The Mod Archive, used under the [Mod Archive License](https://modarchive.org/index.php?terms-upload).
+The example usage links to songs from The Mod Archive, used under the [Mod Archive License](https://modarchive.org/index.php?terms-upload).
 * Silkworm - [Barry Leitch](https://modarchive.org/member.php?81340)
 * Space Debris - Markus "Captain" Kaarlonen
 * Deadlock - [Elwood](https://modarchive.org/member.php?69004)
