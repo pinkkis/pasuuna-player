@@ -412,7 +412,7 @@ export class Tracker {
 					stepResult.patternDelay--;
 
 					for (let i = 0; i < this.trackCount; i++) {
-						applyEffects(i, time)
+						this.applyEffects(i, time)
 					}
 
 					time += this.ticksPerStep * this.tickTime;
@@ -750,11 +750,13 @@ export class Tracker {
 							}
 						}
 					} else {
-						root = notePeriod || this.trackNotes[track].startPeriod;
+						let root = notePeriod || this.trackNotes[track].startPeriod;
 						// check if the instrument is finetuned
 						if (instrument) {
 							finetune = instrument.getFineTune();
-							if (finetune) root = this.audio.getFineTuneForPeriod(root, finetune);
+							if (finetune) {
+								root = this.audio.getFineTuneForPeriod(root, finetune);
+							}
 						}
 
 						trackEffects.arpeggio = {
@@ -1684,7 +1686,7 @@ export class Tracker {
 		if (effects.reTrigger) {
 			const instrumentIndex = trackNote.instrumentIndex;
 			const notePeriod = trackNote.startPeriod;
-			volume = trackNote.startVolume;
+			const volume = trackNote.startVolume;
 			const noteIndex = trackNote.noteIndex;
 			const triggerStep = effects.reTrigger.value || 1;
 			let triggerCount = triggerStep;
@@ -1842,8 +1844,6 @@ export class Tracker {
 			this.song.filename = name;
 
 			this.onModuleLoad();
-
-			this.checkAutoPlay(true);
 		}
 
 		if (result.isSample) {

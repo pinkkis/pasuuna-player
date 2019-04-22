@@ -3,8 +3,6 @@ import { Instrument } from '../models/instrument';
 import { EVENT, LOOPTYPE, TRACKERMODE, SETTINGS } from '../enum';
 import { events } from '../events';
 
-// TODO: tracker global ref
-
 export class ProTracker {
 	constructor(tracker) {
 		this.tracker = tracker;
@@ -17,8 +15,12 @@ export class ProTracker {
 
 		const patternLength = 64;
 		const instrumentCount = 31;
-		const channelCount = 4;
+		let channelCount = 4;
 		const song = {
+			typeId: null,
+			title: '',
+			channels: 0,
+			length: 0,
 			patterns: [],
 			restartPosition: 1,
 		};
@@ -105,12 +107,6 @@ export class ProTracker {
 
 					row.push(note);
 				}
-
-				// fill with empty data for other channels
-				// TODO: not needed anymore ?
-				// for (let channel = channelCount; channel < this.tracker.getTrackCount(); channel++) {
-				// 	row.push(new Note(this.tracker))
-				// }
 
 				patternData.push(row);
 			}
