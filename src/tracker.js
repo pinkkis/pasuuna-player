@@ -1842,6 +1842,7 @@ export class Tracker {
 
 			this.song = result.loader().load(file, name);
 			this.song.filename = name;
+			this.song.trackerType = result.name;
 
 			this.onModuleLoad();
 		}
@@ -1849,6 +1850,27 @@ export class Tracker {
 		if (result.isSample) {
 			console.error('Player cannot use samples alone');
 		}
+	}
+
+	onModuleLoad() {
+		events.emit(EVENT.songLoading, this.song);
+
+		if (this.song.channels) {
+			this.setTrackCount(this.song.channels);
+		}
+
+		this.prevPatternPos = undefined;
+		this.prevInstrumentIndex = undefined;
+		this.prevPattern = undefined;
+		this.prevSongPosition = undefined;
+
+		this.setCurrentSongPosition(0);
+		this.setCurrentPatternPos(0);
+
+		this.clearEffectsCache();
+
+		events.emit(EVENT.songLoaded, this.song);
+		events.emit(EVENT.songPropertyChange, this.song);
 	}
 
 	getSong() {
@@ -1866,29 +1888,6 @@ export class Tracker {
 	setInstrument(index, instrument) {
 		instrument.instrumentIndex = index;
 		this.instruments[index] = instrument;
-	}
-
-
-	onModuleLoad() {
-		events.emit(EVENT.songLoading, this.song);
-
-		if (this.song.channels) {
-			this.setTrackCount(this.song.channels);
-		}
-
-		this.prevPatternPos = undefined;
-		this.prevInstrumentIndex = undefined;
-		this.prevPattern = undefined;
-		this.prevSongPosition = undefined;
-
-		this.setCurrentSongPosition(0);
-		this.setCurrentPatternPos(0);
-		// this.setCurrentInstrumentIndex(1);
-
-		this.clearEffectsCache();
-
-		events.emit(EVENT.songLoaded, this.song);
-		events.emit(EVENT.songPropertyChange, this.song);
 	}
 
 	setTrackerMode(mode) {

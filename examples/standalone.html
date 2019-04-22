@@ -28,6 +28,14 @@
 				cursor: pointer;
 				color: green;
 			}
+
+			.container {
+				padding-top: 1em;
+			}
+
+			#player button {
+				margin: 15px 0;
+			}
 		</style>
 	</head>
 
@@ -40,156 +48,140 @@
 		</div>
 
 		<div class="row">
-
 			<div class="col-4">
 				<div class="card" id="player">
+					<h5 class="card-header">Player</h5>
 					<div class="card-body">
-						<h5 class="card-title">Player</h5>
+						<h5 class="card-title" id="songname">No Song Loaded</h5>
+						<h6 class="card-subtitle" id="songdetails"></h6>
 
-						<button id="play" disabled>Play</button> <span id="songname">Select a song...</span>
+						<p><button class="btn btn-primary btn-xs btn-block" id="play" disabled>Play</button></p>
 
-						<div class="range">
-							Volume:
-							<input id="volume" type="range" min="0" max="100" value="70">
-						</div>
-						<div class="range wide">
-							Progress:
-							<input id="progress" type="range" min="0" max="100" value="0">
-						</div>
+						<form>
+							<div class="form-group">
+								<label for="volume">Volume</label>
+								<input id="volume" class="form-control-range" type="range" min="0" max="100" value="70">
+							</div>
+						</form>
+
 					</div>
 				</div>
 			</div>
 
 			<div class="col-8">
 				<div class="card">
+					<h5 class="card-header">Playlist</h5>
+					<ul id="playlist" class="list-group list-group-flush">
+						<li class="list-group-item"
+							data-url="https://api.modarchive.org/downloads.php?moduleid=42560#GSLINGER.MOD">
+							Guitar Slinger (MOD - ProTracker)
+						</li>
+						<li class="list-group-item"
+							data-url="https://api.modarchive.org/downloads.php?moduleid=57925#space_debris.mod">
+							Space Debris (MOD - ProTracker)
+						</li>
+						<li class="list-group-item"
+							data-url="https://api.modarchive.org/downloads.php?moduleid=35280#DEADLOCK.XM">
+							Deadlock (XM - FastTracker)
+						</li>
+					</ul>
 					<div class="card-body">
-						<h5 class="card-title">Playlist</h5>
-						<ul id="playlist">
-							<li onclick="play('https://api.modarchive.org/downloads.php?moduleid=57232#silkworm.mod')">
-								Silkworm (MOD - SoundTracker)</li>
-							<li
-								onclick="play('https://api.modarchive.org/downloads.php?moduleid=57925#space_debris.mod')">
-								Space Debris (MOD - ProTracker)</li>
-							<li onclick="play('https://api.modarchive.org/downloads.php?moduleid=35280#DEADLOCK.XM')">
-								Deadlock (XM - FastTracker)</li>
-						</ul>
-						<footer>
-							<p>Songs downloaded from The Mod Archive. Used under their <a
-									href="https://modarchive.org/index.php?terms-upload">license</a> for demo
-								purposes.
-							</p>
+						<footer class="blockquote-footer">
+							Songs downloaded from The Mod Archive. Used under their <a
+								href="https://modarchive.org/index.php?terms-upload">license</a> for demo purposes.
 						</footer>
-
 					</div>
 				</div>
 			</div>
-
 		</div>
 
+		<div class="row mt-3">
+			<div class="col">
+				<div class="card" id="instruments">
+					<h5 class="card-header">Instruments</h5>
+					<ul class="list-group list-group-flush"></ul>
+				</div>
+			</div>
+		</div>
 
 		<script src="pasuunaplayer.js"></script>
 		<script>
 			document.addEventListener('DOMContentLoaded', () => {
 				const playButton = document.getElementById("play");
-				const progressBar = document.getElementById("progress");
 				const volumeBar = document.getElementById("volume");
+				const playlist = document.getElementById("playlist");
 				const songName = document.getElementById("songname");
-
+				const songDetails = document.getElementById("songdetails");
+				const instrumentsContainer = document.getElementById("instruments");
 				const tracker = new PasuunaPlayer.Tracker();
+
 				tracker.init();
 
 				if (!tracker.audio.context) {
 					songName.innerHTML = "Your browser does not support WebAudio.";
-				} else {
 
-					var startTime;
-					var wasPlaying;
-					var patternLength;
-					var songLength;
+				} else {
+					let startTime = null;
 
 					tracker.events.on(PasuunaPlayer.EVENT.songLoaded, (song) => {
-						console.log(song);
-						playButton.disabled = false;
-						songName.innerHTML = song.title;
+						// clear old instruments
+						instrumentsContainer.querySelector('ul').innerHTML = '';
 
 						// We could loop over all the patterns to get the real length, but a rough estimate is good enough.
-						patternLength = song.patterns[song.patternTable[0]].length;
-						songLength = song.length * patternLength;
+						const patternLength = song.patterns[song.patternTable[0]].length;
+						const songLength = song.length * patternLength;
+
+						playButton.disabled = false;
+						playButton.innerHTML = 'Play';
+						songName.innerHTML = song.title.trim();
+						songDetails.innerHTML = `Tracker Type: ${song.trackerType}<br>\nChannels: ${song.channels} - Length: ${songLength}`;
+
+						song.instruments.forEach(instrument => {
+							const listItem = document.createElement('li');
+							listItem.classList.add(['list-group-item']);
+							listItem.innerHTML = `${instrument.instrumentIndex}. ${instrument.name.trim()}`;
+							instrumentsContainer.querySelector('ul').appendChild(listItem);
+						});
 
 					});
 
-					playItem = function (url) {
-						playButton.disabled = true;
-						stopPlay();
-						songName.innerHTML = "Loading ...";
-						tracker.load(url);
-					};
+					for (const listItem of playlist.querySelectorAll('li')) {
+						listItem.addEventListener('click', (event) => {
+							const url = listItem.attributes.getNamedItem('data-url').value;
+							loadUrl(url);
+						});
+					}
 
-					// setup UI
-
-					playButton.onclick = function () {
+					playButton.onclick = () => {
 						togglePlay();
 					};
 
 					// setup progress bar to seek into the song
-					progressBar.oninput = function () {
-						wasPlaying = wasPlaying || tracker.isPlaying;
-						stopPlay();
-					};
-
-					progressBar.onchange = function () {
-						// align to start of pattern
-						var songPos = Math.floor((songLength * progressBar.value / 100) / patternLength);
-						tracker.setCurrentSongPosition(songPos);
-						if (wasPlaying) togglePlay();
-						wasPlaying = false;
-					};
-
-					// setup progress bar to seek into the song
-					volumeBar.oninput = volumeBar.onchange = function () {
+					volumeBar.oninput = volumeBar.onchange = () => {
 						tracker.audio.masterVolume.gain.cancelScheduledValues(0);
 						tracker.audio.masterVolume.gain.setValueAtTime(volumeBar.value / 100, 0);
 					};
 
-					// setup simple timer
-					// this has nothing to do with audio playback, it's only used to update the UI once in a while;
-					requestAnimationFrame(function loop() {
-						if (startTime) {
-							if (tracker.isPlaying) {
-								var time = new Date().getTime() - startTime;
-								var state = tracker.getStateAtTime(time);
-								if (state) {
-									var currentPos = state.songPos * patternLength + state.patternPos;
-									var percentage = currentPos * 100 / songLength;
-									progressBar.value = percentage;
-								}
-							}
+					function loadUrl(url) {
+						playButton.disabled = true;
+						if (tracker.isPlaying) {
+							tracker.stop();
 						}
-						requestAnimationFrame(loop);
-					});
+						songName.innerHTML = "Loading ...";
+						tracker.load(url);
+					};
 
-				}
-
-				function togglePlay() {
-					tracker.togglePlay();
-					if (tracker.isPlaying) {
-						startTime = new Date().getTime();
-						playButton.innerHTML = "Pause";
-					} else {
-						playButton.innerHTML = "Play";
+					function togglePlay() {
+						if (!tracker.isPlaying) {
+							playButton.innerHTML = "Stop";
+							tracker.playSong();
+						} else {
+							playButton.innerHTML = "Play";
+							tracker.stop();
+						}
 					}
 				}
-
-				function stopPlay() {
-					tracker.stop();
-					playButton.innerHTML = "Play";
-				}
 			});
-
-			function play(url) {
-				if (playItem) playItem(url);
-			}
-
 		</script>
 	</body>
 
