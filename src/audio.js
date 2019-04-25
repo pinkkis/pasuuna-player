@@ -590,6 +590,7 @@ export class Audio {
 	}
 
 	setMasterVolume(value, time) {
+		events.emit(EVENT.masterVolumeChange, value);
 		time = time || this.context.currentTime;
 		value = value * 0.7;
 		this.masterVolume.gain.setValueAtTime(this.lastMasterVolume, time);
@@ -598,6 +599,7 @@ export class Audio {
 	}
 
 	slideMasterVolume(value, time) {
+		events.emit(EVENT.masterVolumeChange, value);
 		time = time || this.context.currentTime;
 		value = value * 0.7;
 		this.masterVolume.gain.linearRampToValueAtTime(value, time);

@@ -11,6 +11,7 @@ export const EVENT = {
 	songRestart: 11,
 	songBPMChange: 12,
 	samplePlay: 13,
+	masterVolumeChange: 15,
 	songPropertyChange: 16,
 	instrumentNameChange: 17,
 	command: 18,

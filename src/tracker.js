@@ -241,7 +241,7 @@ export class Tracker {
 
 			if (fromUserInteraction && this.isPlaying) {
 				this.stop();
-				this.togglePlay();
+				this.playSong();
 			}
 		}
 	}
@@ -303,18 +303,6 @@ export class Tracker {
 		if (this.clock) this.clock.stop();
 		this.isPlaying = false;
 		events.emit(EVENT.playingChange, this.isPlaying);
-	}
-
-	togglePlay() {
-		if (this.isPlaying) {
-			this.stop();
-		} else {
-			if (this.currentPlayType == PLAYTYPE.pattern) {
-				this.playPattern();
-			} else {
-				this.playSong();
-			}
-		}
 	}
 
 	getProperties() {
@@ -1799,12 +1787,6 @@ export class Tracker {
 		} else {
 			name = url.name || '';
 			this.processFile(url.buffer || url, name);
-		}
-	}
-
-	checkAutoPlay(play) {
-		if (play) {
-			this.playSong();
 		}
 	}
 
