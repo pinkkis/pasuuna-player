@@ -538,7 +538,6 @@ export class Tracker {
 
 			if (SETTINGS.emulateProtracker1OffsetBug && instrumentIndex && this.trackEffectCache[track].offset) {
 				if (this.trackEffectCache[track].offset.instrument === instrumentIndex) {
-					console.log('applying instrument offset cache to instrument ' + instrumentIndex);
 					trackEffects.offset = this.trackEffectCache[track].offset;
 				}
 			}
@@ -576,7 +575,6 @@ export class Tracker {
 				if (offInstrument) {
 					volume = offInstrument.noteOff(time, this.trackNotes[track]);
 				} else {
-					console.log('no instrument on track ' + track);
 					volume = 0;
 				}
 				defaultVolume = volume;
@@ -653,11 +651,11 @@ export class Tracker {
 						break;
 					case 10:
 						// set vibrato speed
-						console.warn('set vibrato speed not implemented');
+						// console.warn('set vibrato speed not implemented');
 						break;
 					case 11:
 						// Vibrato
-						console.warn('Vibrato not implemented');
+						// console.warn('Vibrato not implemented');
 						break;
 					case 12:
 						// Set panning
@@ -668,7 +666,7 @@ export class Tracker {
 						break;
 					case 13:
 						// Panning slide left
-						console.warn('Panning slide left not implemented - track ' + track);
+						// console.warn('Panning slide left not implemented - track ' + track);
 						trackEffects.panning = {
 							value: ve,
 							slide: true,
@@ -676,11 +674,11 @@ export class Tracker {
 						break;
 					case 14:
 						// Panning slide right
-						console.warn('Panning slide right not implemented - track ' + track);
+						// console.warn('Panning slide right not implemented - track ' + track);
 						break;
 					case 15:
 						// Tone porta
-						console.warn('Tone Porta not implemented');
+						// console.warn('Tone Porta not implemented');
 						break;
 				}
 			}
@@ -1184,13 +1182,13 @@ export class Tracker {
 								result.targetSongPosition = songPos.position; // keep on same position
 								result.targetPatternPosition = this.patternLoopStart[track] || 0; // should we default to 0 if no start was set or just ignore?
 
-								console.log('looping to ' + result.targetPatternPosition + ' for ' + this.patternLoopCount[track] + '/' + subValue);
+								// console.log('looping to ' + result.targetPatternPosition + ' for ' + this.patternLoopCount[track] + '/' + subValue);
 								this.events.emit(EVENT.patternLoopChange, {target: result.targetPatternPosition, count: this.patternLoopCount[track]});
 							} else {
 								this.patternLoopCount[track] = 0;
 							}
 						} else {
-							console.log('setting loop start to ' + songPos.step + ' on track ' + track);
+							// console.log('setting loop start to ' + songPos.step + ' on track ' + track);
 							this.patternLoopStart[track] = songPos.step;
 						}
 						break;
@@ -1207,7 +1205,7 @@ export class Tracker {
 						}
 						break;
 					case 8: // Set Panning - is this used ?
-						console.warn('Set Panning - not implemented');
+						// console.warn('Set Panning - not implemented');
 						break;
 					case 9: // Retrigger Note
 						if (subValue) {
@@ -1259,7 +1257,7 @@ export class Tracker {
 						// Don't think is used somewhere - ignore
 						break;
 					default:
-						console.warn('Subeffect ' + subEffect + ' not implemented');
+						// console.warn('Subeffect ' + subEffect + ' not implemented');
 				}
 				break;
 			case 15:
@@ -1314,7 +1312,6 @@ export class Tracker {
 					if (offInstrument) {
 						volume = offInstrument.noteOff(time, this.trackNotes[track]);
 					} else {
-						console.log('no instrument on track ' + track);
 						volume = 0;
 					}
 					defaultVolume = volume;
@@ -1323,11 +1320,11 @@ export class Tracker {
 				break;
 			case 21:
 				//Fasttracker only - Set envelope position
-				console.warn('Set envelope position not implemented');
+				// console.warn('Set envelope position not implemented');
 				break;
 			case 25:
 				//Fasttracker only - Panning slide
-				console.warn('Panning slide not implemented - track ' + track);
+				// console.warn('Panning slide not implemented - track ' + track);
 				break;
 			case 27:
 				//Fasttracker only - Multi retrig note
@@ -1340,14 +1337,14 @@ export class Tracker {
 				break;
 			case 29:
 				//Fasttracker only - Tremor
-				console.warn('Tremor not implemented');
+				// console.warn('Tremor not implemented');
 				break;
 			case 33:
 				//Fasttracker only - Extra fine porta
-				console.warn('Extra fine porta not implemented');
+				// console.warn('Extra fine porta not implemented');
 				break;
 			default:
-				console.warn('unhandled effect: ' + note.effect);
+				// console.warn('unhandled effect: ' + note.effect);
 		}
 
 		if (doPlayNote && instrumentIndex && notePeriod) {
@@ -1668,8 +1665,9 @@ export class Tracker {
 	}
 
 	setBPM(newBPM) {
-		console.log('set BPM: ' + this.bpm + ' to ' + newBPM);
-		if (this.clock) this.clock.timeStretch(this.audio.context.currentTime, [this.mainTimer], this.bpm / newBPM);
+		if (this.clock) {
+			this.clock.timeStretch(this.audio.context.currentTime, [this.mainTimer], this.bpm / newBPM);
+		}
 		this.bpm = newBPM;
 		this.tickTime = 2.5 / this.bpm;
 		events.emit(EVENT.songBPMChange, this.bpm);
@@ -1791,6 +1789,8 @@ export class Tracker {
 	}
 
 	processFile(arrayBuffer, name) {
+		events.emit(EVENT.songLoading, this.song);
+
 		let file = new BinaryStream(arrayBuffer, true);
 		let result = this.detector.detect(file, name);
 
@@ -1809,13 +1809,11 @@ export class Tracker {
 		}
 
 		if (result.isSample) {
-			console.error('Player cannot use samples alone');
+			console.error('Pasuuna cannot play samples on their own');
 		}
 	}
 
 	onModuleLoad() {
-		events.emit(EVENT.songLoading, this.song);
-
 		if (this.song.channels) {
 			this.setTrackCount(this.song.channels);
 		}

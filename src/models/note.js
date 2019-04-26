@@ -23,7 +23,7 @@ export class Note {
 				this.period = 0;
 			}
 		} else {
-			console.warn("No note for index " + index);
+			// console.warn("No note for index " + index);
 			this.period = 0;
 		}
 	};

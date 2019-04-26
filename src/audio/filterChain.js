@@ -123,8 +123,6 @@ export class FilterChain {
 	};
 
 	setState(name, value) {
-		console.error(name, value);
-
 		this.disConnectFilter();
 
 		if (name === "high") this.useHigh = !!value;
@@ -135,7 +133,6 @@ export class FilterChain {
 		if (name === "panning") this.usePanning = (!!value) && this.context.createStereoPanner;
 
 		this.connectFilters();
-
 	};
 
 	connectFilters() {

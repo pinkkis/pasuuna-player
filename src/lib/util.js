@@ -58,7 +58,7 @@ export function isAcii(byte) {
 }
 
 export function isST(file) {
-	console.log('Checking for old 15 instrument soundtracker format');
+	// console.log('Checking for old 15 instrument soundtracker format');
 
 	file.goto(0);
 
@@ -68,9 +68,8 @@ export function isST(file) {
 		}
 	}
 
-	console.log('First 20 chars are ascii, checking Samples');
-
 	// check samples
+	// console.log('First 20 chars are ascii, checking Samples');
 	let totalSampleLength = 0;
 	let probability = 0;
 	for (let s = 0; s < 15; s++) {
@@ -111,7 +110,7 @@ export function loadFile(url, next) {
 		if (arrayBuffer) {
 			if (next) next(arrayBuffer);
 		} else {
-			console.error('unable to load', url);
+			console.error('Pasuuna: unable to load', url);
 			if (next) {
 				next(false);
 			}

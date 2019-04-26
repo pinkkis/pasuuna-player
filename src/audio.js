@@ -89,17 +89,13 @@ export class Audio {
 	init(actx) {
 		actx = actx || this.audioContext;
 		if (!actx) {
-			console.error('No audioContext');
+			console.error('Pasuuna: No audioContext');
 			return;
 		} else {
 			this.context = actx;
 		}
 
 		this.usePanning = !!this.context.createStereoPanner;
-		if (!this.usePanning) {
-			console.warn('Browser does not support StereoPanners, mono only');
-		}
-
 		this.createAudioConnections(actx);
 
 		const numberOfTracks = this.tracker.getTrackCount();
@@ -148,14 +144,12 @@ export class Audio {
 			});
 			this.scheduledNotes[index] = [];
 		});
-
-		if (totalNotes) console.log(totalNotes + ' cleared');
 	};
 
 	checkState() {
 		if (this.context) {
 			if (this.context.state === 'suspended' && this.context.resume) {
-				console.info('Audio context is suspended - trying to resume');
+				console.info('Pasuuna: Audio context is suspended - trying to resume');
 				this.context.resume();
 			}
 		}
@@ -469,7 +463,7 @@ export class Audio {
 			period = this.getFineTuneBasePeriod(period, finetune);
 			if (!period) {
 				period = result;
-				console.error('ERROR: base period for finetuned ' + finetune + ' period ' + period + ' not found');
+				console.error('Pasuuna: base period for finetuned ' + finetune + ' period ' + period + ' not found');
 			}
 		}
 
@@ -490,9 +484,7 @@ export class Audio {
 					}
 				}
 			} else {
-				console.error('ERROR: note for period ' + period + ' not found');
-				// note: this can happen when the note is in a period slide
-				// FIXME
+				console.error('Pasuuna: note for period ' + period + ' not found');
 			}
 		}
 		return result;

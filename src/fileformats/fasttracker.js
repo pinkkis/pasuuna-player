@@ -12,7 +12,6 @@ export class FastTracker {
 
 	// see ftp://ftp.modland.com/pub/documents/format_documentation/FastTracker%202%20v2.04%20(.xm).html
 	load(file) {
-		console.log('loading FastTracker');
 		this.tracker.setTrackerMode(TRACKERMODE.FASTTRACKER);
 		this.tracker.clearInstruments(1);
 
@@ -46,8 +45,6 @@ export class FastTracker {
 
 		mod.defaultTempo = file.readWord();
 		mod.defaultBPM = file.readWord();
-
-		console.log('File was made in ' + mod.trackerName + ' version ' + mod.trackerVersion);
 
 		const patternTable = [];
 		let highestPattern = 0;
@@ -167,7 +164,7 @@ export class FastTracker {
 
 				}
 			} catch (e) {
-				console.error('error', e);
+				console.error('Pasuuna trakcer error', e);
 			}
 
 			fileStartPos += instrument.headerSize;
@@ -178,7 +175,7 @@ export class FastTracker {
 				instrument.samples.push(sample);
 			} else {
 				if (file.isEOF(1)) {
-					console.error('seek past EOF', instrument);
+					console.error('Pasuuna seek past EOF', instrument);
 					break;
 				}
 
@@ -220,7 +217,7 @@ export class FastTracker {
 					sample.loop.enabled = !!sample.loop.type;
 
 					// sample data
-					console.log('Reading sample from 0x' + file.index + ' with length of ' + sample.length + (sample.bits === 16 ? ' words' : ' bytes') + ' and repeat length of ' + sample.loop.length);
+					// console.log('Reading sample from 0x' + file.index + ' with length of ' + sample.length + (sample.bits === 16 ? ' words' : ' bytes') + ' and repeat length of ' + sample.loop.length);
 					const sampleEnd = sample.length;
 
 					let old = 0;

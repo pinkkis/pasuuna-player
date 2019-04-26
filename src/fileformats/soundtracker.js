@@ -93,7 +93,7 @@ export class SoundTracker {
 		for (let i = 1; i <= instrumentCount; i++) {
 			const instrument = this.tracker.getInstrument(i);
 			if (instrument) {
-				console.log("Reading sample from 0x" + file.index + " with length of " + instrument.sample.length + " bytes and repeat length of " + instrument.sample.loop.length);
+				// console.log("Reading sample from 0x" + file.index + " with length of " + instrument.sample.length + " bytes and repeat length of " + instrument.sample.loop.length);
 				const sampleEnd = instrument.sample.length;
 
 				for (let j = 0; j < sampleEnd; j++) {
