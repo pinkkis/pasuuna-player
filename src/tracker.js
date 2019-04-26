@@ -205,47 +205,6 @@ export class Tracker {
 		this.prevPatternPos = this.currentPatternPos;
 	}
 
-	getCurrentPatternPos() {
-		return this.currentPatternPos;
-	}
-
-	moveCurrentPatternPos(amount) {
-		let newPos = this.currentPatternPos + amount;
-		let max = this.patternLength - 1;
-
-		if (newPos < 0) {
-			newPos = max;
-		}
-
-		if (newPos > max) {
-			newPos = 0;
-		}
-
-		this.setCurrentPatternPos(newPos);
-	}
-
-	getCurrentSongPosition() {
-		return this.currentSongPosition;
-	}
-
-	setCurrentSongPosition(position, fromUserInteraction = false) {
-		this.currentSongPosition = position;
-		if (this.currentSongPosition != this.prevSongPosition) {
-			events.emit(EVENT.songPositionChange, this.currentSongPosition);
-
-			if (this.song.patternTable) {
-				this.setCurrentPattern(this.song.patternTable[this.currentSongPosition]);
-			}
-
-			this.prevSongPosition = this.currentSongPosition;
-
-			if (fromUserInteraction && this.isPlaying) {
-				this.stop();
-				this.playSong();
-			}
-		}
-	}
-
 	setPlayType(playType) {
 		this.currentPlayType = playType;
 		events.emit(EVENT.playTypeChange, this.currentPlayType);
@@ -264,23 +223,15 @@ export class Tracker {
 		events.emit(EVENT.playingChange, this.isPlaying);
 	}
 
-	playPattern() {
-		this.stop();
-		this.audio.checkState();
-		this.currentPatternPos = 0;
-		this.setPlayType(PLAYTYPE.pattern);
-		this.isPlaying = true;
-		this.playPatternIndex(this.currentPattern);
-		events.emit(EVENT.playingChange, this.isPlaying);
-	}
-
-	stop() {
+	stop(resetVolume = true) {
 		if (this.clock) {
 			this.clock.stop();
 		}
 
 		this.audio.disable();
-		this.audio.setMasterVolume(1);
+		if (resetVolume) {
+			this.audio.setMasterVolume(1);
+		}
 
 		this.clearEffectsCache();
 
@@ -1699,7 +1650,9 @@ export class Tracker {
 		this.patternLength = value;
 
 		const currentLength = this.song.patterns[this.currentPattern].length;
-		if (currentLength === this.patternLength) return;
+		if (currentLength === this.patternLength) {
+			return;
+		}
 
 		if (currentLength < this.patternLength) {
 			for (let step = currentLength; step < this.patternLength; step++) {
@@ -1789,7 +1742,7 @@ export class Tracker {
 	}
 
 	processFile(arrayBuffer, name) {
-		events.emit(EVENT.songLoading, this.song);
+		events.emit(EVENT.songLoading, name);
 
 		let file = new BinaryStream(arrayBuffer, true);
 		let result = this.detector.detect(file, name);
@@ -1823,7 +1776,10 @@ export class Tracker {
 		this.prevPattern = undefined;
 		this.prevSongPosition = undefined;
 
-		this.setCurrentSongPosition(0);
+
+		if (this.song.patternTable) {
+			this.setCurrentPattern(this.song.patternTable[0]);
+		}
 		this.setCurrentPatternPos(0);
 
 		this.clearEffectsCache();
